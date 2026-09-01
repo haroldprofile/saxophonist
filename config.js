@@ -20,6 +20,14 @@ window.SITE_CONFIG = {
     tiktokUsername: "@haroldtrinidad"
   },
 
+  adminSecurity: {
+    adminEmail: "haroldcalo.trinidad@gmail.com",
+    otpExpirationMinutes: 5,
+    emailjsPublicKey: "YOUR_EMAILJS_PUBLIC_KEY",
+    emailjsServiceId: "service_harold_sax",
+    emailjsTemplateId: "template_admin_otp"
+  },
+
   rates: {
     depositPercentage: 30,
     transportFeePampanga: 500,

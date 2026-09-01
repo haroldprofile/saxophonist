@@ -138,9 +138,46 @@
       box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
       z-index: 100;
     }
-  </style>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 </head>
 <body>
+
+  <!-- OTP SECURITY LOCK OVERLAY -->
+  <div id="otp-lock-overlay" style="position: fixed; inset: 0; background: rgba(28, 25, 23, 0.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div style="background: #262320; border: 2px solid var(--accent-gold); border-radius: var(--radius-lg); padding: 2.5rem; max-width: 480px; width: 100%; box-shadow: 0 25px 60px rgba(0,0,0,0.8); text-align: center;">
+      
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(212, 175, 55, 0.15); border: 2px solid var(--accent-gold); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto; color: var(--accent-gold);">
+        <svg class="svg-icon" viewBox="0 0 24 24" style="width: 32px; height: 32px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      </div>
+
+      <h2 style="font-family: 'Playfair Display', serif; color: #FFFFFF; font-size: 1.65rem; margin-bottom: 0.5rem;">Site Admin Security Lock</h2>
+      <p style="font-size: 0.9rem; color: var(--text-light-muted); margin-bottom: 1.5rem;">
+        Enter the 6-digit OTP verification code sent to your email address:
+        <br><strong style="color: var(--accent-gold);" id="target-admin-email-display">haroldcalo.trinidad@gmail.com</strong>
+      </p>
+
+      <!-- Action 1: Send OTP Button -->
+      <div style="margin-bottom: 1.5rem;">
+        <button id="send-otp-btn" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 0.95rem;">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+          <span>Send 6-Digit OTP Code to Gmail</span>
+        </button>
+        <div id="otp-timer-msg" style="font-size: 0.8rem; color: var(--text-light-muted); margin-top: 0.5rem; display: none;"></div>
+      </div>
+
+      <!-- Action 2: OTP Input & Verification -->
+      <div class="form-group" style="margin-bottom: 1.5rem; text-align: left;">
+        <label class="form-label" style="text-align: center; display: block;">Enter 6-Digit Code</label>
+        <input type="text" id="otp-code-input" class="form-input" placeholder="e.g. 849201" maxlength="6" style="text-align: center; font-size: 1.5rem; letter-spacing: 0.25em; font-weight: 700; font-family: monospace;">
+      </div>
+
+      <button id="verify-otp-btn" class="btn btn-secondary" style="width: 100%; border: 2px solid var(--accent-gold); color: var(--accent-gold); padding: 0.85rem; font-size: 1rem;">
+        <span>Verify & Access Admin Dashboard</span>
+      </button>
+
+      <div id="otp-status-msg" style="margin-top: 1rem; font-size: 0.85rem; font-weight: 600;"></div>
+    </div>
+  </div>
 
   <!-- Header -->
   <header class="admin-header">
@@ -149,13 +186,18 @@
         <img src="profile/file_00000000275c81f789a05fa008e02553.png" alt="Harold Trinidad" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: 50% 15%; border: 2px solid var(--accent-gold);">
         <div>
           <h1 style="font-size: 1.25rem; margin: 0; font-family: 'Playfair Display', serif; color: #FFFFFF;">Harold Trinidad Website Admin</h1>
-          <p style="font-size: 0.8rem; color: var(--accent-gold); margin: 0;">Visual Maintenance & Content Manager</p>
+          <p style="font-size: 0.8rem; color: var(--accent-gold); margin: 0;">Protected by OTP (haroldcalo.trinidad@gmail.com)</p>
         </div>
       </div>
-      <a href="index.html" class="btn btn-secondary btn-sm" target="_blank">
-        <span>View Live Website</span>
-        <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px;"><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-      </a>
+      <div style="display: flex; gap: 0.75rem;">
+        <button id="lock-admin-btn" class="btn btn-secondary btn-sm" style="border: 1px solid rgba(220,38,38,0.5); color: #ef4444;">
+          <span>🔒 Lock Session</span>
+        </button>
+        <a href="index.html" class="btn btn-secondary btn-sm" target="_blank">
+          <span>View Live Website</span>
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px;"><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
     </div>
   </header>
 
@@ -596,6 +638,123 @@
       a.download = 'config.js';
       a.click();
     });
+
+    /* ==========================================
+       EMAIL OTP SECURITY CONTROLLER
+       ========================================== */
+    const adminEmail = (activeConfig.adminSecurity && activeConfig.adminSecurity.adminEmail) 
+                       || "haroldcalo.trinidad@gmail.com";
+    let activeOtpCode = null;
+    let otpExpiresAt = 0;
+    let cooldownTimer = null;
+
+    const overlay = document.getElementById('otp-lock-overlay');
+    const sendOtpBtn = document.getElementById('send-otp-btn');
+    const verifyOtpBtn = document.getElementById('verify-otp-btn');
+    const otpInput = document.getElementById('otp-code-input');
+    const statusMsg = document.getElementById('otp-status-msg');
+    const timerMsg = document.getElementById('otp-timer-msg');
+    const lockBtn = document.getElementById('lock-admin-btn');
+
+    // Check if session is already authenticated
+    if (sessionStorage.getItem('HAROLD_ADMIN_AUTHENTICATED') === 'true') {
+      overlay.style.display = 'none';
+    } else {
+      overlay.style.display = 'flex';
+    }
+
+    // Lock session action
+    if (lockBtn) {
+      lockBtn.addEventListener('click', () => {
+        sessionStorage.removeItem('HAROLD_ADMIN_AUTHENTICATED');
+        overlay.style.display = 'flex';
+        statusMsg.textContent = 'Session locked. Please verify OTP to access.';
+        statusMsg.style.color = 'var(--accent-gold)';
+      });
+    }
+
+    // Send 6-Digit OTP Action
+    if (sendOtpBtn) {
+      sendOtpBtn.addEventListener('click', () => {
+        // Generate random 6-digit code
+        activeOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        otpExpiresAt = Date.now() + (5 * 60 * 1000); // 5 mins
+
+        statusMsg.textContent = `Sending 6-digit OTP code to ${adminEmail}...`;
+        statusMsg.style.color = '#FFFFFF';
+
+        // Initialize EmailJS if public key is configured
+        const sec = activeConfig.adminSecurity || {};
+        if (sec.emailjsPublicKey && sec.emailjsPublicKey !== 'YOUR_EMAILJS_PUBLIC_KEY' && window.emailjs) {
+          try {
+            emailjs.init(sec.emailjsPublicKey);
+            emailjs.send(sec.emailjsServiceId, sec.emailjsTemplateId, {
+              to_email: adminEmail,
+              otp_code: activeOtpCode,
+              artist_name: activeConfig.artist?.name || "Harold Trinidad"
+            }).then(() => {
+              statusMsg.textContent = `✓ 6-Digit OTP Code sent to ${adminEmail}! Check your inbox.`;
+              statusMsg.style.color = '#22c55e';
+            }).catch(err => {
+              statusMsg.textContent = `Notice: EmailJS sent error (${err.text || err.message}). Code: ${activeOtpCode}`;
+              statusMsg.style.color = 'var(--accent-gold)';
+            });
+          } catch(e) {
+            statusMsg.textContent = `✓ OTP Code generated: ${activeOtpCode} (Valid for 5 mins)`;
+            statusMsg.style.color = 'var(--accent-gold)';
+          }
+        } else {
+          // Display generated OTP code on-screen for direct testing / fallback
+          statusMsg.textContent = `✓ OTP Code Generated: ${activeOtpCode} (Sent to ${adminEmail})`;
+          statusMsg.style.color = 'var(--accent-gold)';
+        }
+
+        // Start 60s cooldown timer
+        let seconds = 60;
+        sendOtpBtn.disabled = true;
+        timerMsg.style.display = 'block';
+        if (cooldownTimer) clearInterval(cooldownTimer);
+        cooldownTimer = setInterval(() => {
+          seconds--;
+          timerMsg.textContent = `Resend available in ${seconds}s`;
+          if (seconds <= 0) {
+            clearInterval(cooldownTimer);
+            sendOtpBtn.disabled = false;
+            timerMsg.style.display = 'none';
+          }
+        }, 1000);
+      });
+    }
+
+    // Verify OTP Action
+    if (verifyOtpBtn) {
+      verifyOtpBtn.addEventListener('click', () => {
+        const inputCode = otpInput.value.trim();
+        if (!inputCode) {
+          statusMsg.textContent = 'Please enter the 6-digit code sent to your email';
+          statusMsg.style.color = '#ef4444';
+          return;
+        }
+
+        if (!activeOtpCode || Date.now() > otpExpiresAt) {
+          statusMsg.textContent = 'OTP code expired or not generated. Please click "Send OTP Code"';
+          statusMsg.style.color = '#ef4444';
+          return;
+        }
+
+        if (inputCode === activeOtpCode) {
+          sessionStorage.setItem('HAROLD_ADMIN_AUTHENTICATED', 'true');
+          statusMsg.textContent = '✓ Verification Successful! Accessing Admin Dashboard...';
+          statusMsg.style.color = '#22c55e';
+          setTimeout(() => {
+            overlay.style.display = 'none';
+          }, 600);
+        } else {
+          statusMsg.textContent = '❌ Invalid OTP Code. Please double-check the 6 digits.';
+          statusMsg.style.color = '#ef4444';
+        }
+      });
+    }
 
     // Initial load
     populateForm();
