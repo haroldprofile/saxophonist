@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Website Admin Panel | Harold Trinidad Saxophonist</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <style>
+    body {
+      background: #1C1917;
+      color: #FFFFFF;
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+    }
+    .admin-header {
+      background: #262320;
+      border-bottom: 2px solid var(--accent-gold);
+      padding: 1.25rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .admin-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+    .admin-nav {
+      display: flex;
+      gap: 0.5rem;
+      margin: 2rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto;
+    }
+    .admin-tab {
+      padding: 0.85rem 1.5rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-bottom: none;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      color: var(--text-light-muted);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: var(--transition-fast);
+      white-space: nowrap;
+    }
+    .admin-tab.active {
+      background: var(--accent-gold);
+      color: var(--primary-dark);
+      border-color: var(--accent-gold);
+    }
+    .tab-content {
+      display: none;
+      background: #262320;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      margin-bottom: 3rem;
+      box-shadow: var(--shadow-lg);
+    }
+    @media (max-width: 768px) {
+      .tab-content {
+        padding: 1.25rem;
+      }
+      .admin-nav {
+        gap: 0.25rem;
+      }
+      .admin-tab {
+        padding: 0.6rem 0.85rem;
+        font-size: 0.82rem;
+      }
+      .save-bar {
+        padding: 0.75rem 0;
+      }
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .form-group-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .admin-section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      color: var(--accent-gold);
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      padding-bottom: 0.5rem;
+    }
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      background: #1C1917;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .item-row-info {
+      flex-grow: 1;
+    }
+    .item-row-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .btn-sm {
+      padding: 0.4rem 0.85rem;
+      font-size: 0.85rem;
+    }
+    .btn-danger {
+      background: #dc2626;
+      color: #FFFFFF;
+      border: none;
+    }
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+    .save-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #262320;
+      border-top: 2px solid var(--accent-gold);
+      padding: 1rem 0;
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="admin-header">
+    <div class="admin-container" style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <img src="profile/file_00000000275c81f789a05fa008e02553.png" alt="Harold Trinidad" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: 50% 15%; border: 2px solid var(--accent-gold);">
+        <div>
+          <h1 style="font-size: 1.25rem; margin: 0; font-family: 'Playfair Display', serif; color: #FFFFFF;">Harold Trinidad Website Admin</h1>
+          <p style="font-size: 0.8rem; color: var(--accent-gold); margin: 0;">Visual Maintenance & Content Manager</p>
+        </div>
+      </div>
+      <a href="index.html" class="btn btn-secondary btn-sm" target="_blank">
+        <span>View Live Website</span>
+        <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px;"><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+      </a>
+    </div>
+  </header>
+
+  <main class="admin-container" style="padding-bottom: 100px;">
+    <!-- Tab Navigation -->
+    <div class="admin-nav">
+      <button class="admin-tab active" data-tab="tab-profile">👤 Artist Info & Contact</button>
+      <button class="admin-tab" data-tab="tab-rates">💰 Packages & Rates</button>
+      <button class="admin-tab" data-tab="tab-videos">🎷 YouTube Videos (15)</button>
+      <button class="admin-tab" data-tab="tab-reviews">💬 Client Reviews (5)</button>
+      <button class="admin-tab" data-tab="tab-export">⚙️ Backup & Export</button>
+    </div>
+
+    <!-- TAB 1: ARTIST PROFILE & CONTACT INFO -->
+    <div class="tab-content active" id="tab-profile">
+      <h2 class="admin-section-title">Artist Information & Contact Settings</h2>
+      
+      <div class="form-group-grid">
+        <div class="form-group">
+          <label class="form-label">Artist Full Name</label>
+          <input type="text" id="cfg-artist-name-input" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tagline / Slogan</label>
+          <input type="text" id="cfg-artist-tagline-input" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Direct Email</label>
+          <input type="email" id="cfg-artist-email-input" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input type="text" id="cfg-artist-phone-input" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Primary Coverage Area</label>
+          <input type="text" id="cfg-artist-location-input" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Profile Photo Path</label>
+          <input type="text" id="cfg-artist-photo-input" class="form-input">
+        </div>
+      </div>
+
+      <h2 class="admin-section-title" style="margin-top: 2rem;">TikTok Video Embed in About Section</h2>
+      <div class="form-group-grid">
+        <div class="form-group" style="grid-column: span 2;">
+          <label class="form-label">TikTok Embed iFrame URL</label>
+          <input type="text" id="cfg-tiktok-embed-input" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">TikTok Direct Link</label>
+          <input type="text" id="cfg-tiktok-link-input" class="form-input">
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: PACKAGES & RATES -->
+    <div class="tab-content" id="tab-rates">
+      <h2 class="admin-section-title">2026 Package Rates & Deposit Settings</h2>
+
+      <div class="form-group-grid">
+        <div class="form-group">
+          <label class="form-label">Required Downpayment %</label>
+          <input type="number" id="cfg-deposit-percent-input" class="form-input" min="1" max="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pampanga Transport Fee (₱)</label>
+          <input type="number" id="cfg-transport-fee-input" class="form-input">
+        </div>
+      </div>
+
+      <h3 style="color: #FFFFFF; font-size: 1.2rem; margin: 1.5rem 0 1rem 0;">Package A (Church & Reception)</h3>
+      <div class="form-group-grid">
+        <div class="form-group">
+          <label class="form-label">Package A Base Rate (₱)</label>
+          <input type="number" id="cfg-pkga-base-input" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Package A Total Price (₱)</label>
+          <input type="number" id="cfg-pkga-total-input" class="form-input">
+        </div>
+      </div>
+
+      <h3 style="color: #FFFFFF; font-size: 1.2rem; margin: 1.5rem 0 1rem 0;">Package B (Single Location)</h3>
+      <div class="form-group-grid">
+        <div class="form-group">
+          <label class="form-label">Package B Base Rate (₱)</label>
+          <input type="number" id="cfg-pkgb-base-input" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Package B Total Price (₱)</label>
+          <input type="number" id="cfg-pkgb-total-input" class="form-input">
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: YOUTUBE PERFORMANCE VIDEOS -->
+    <div class="tab-content" id="tab-videos">
+      <h2 class="admin-section-title">YouTube Performance Repertoire Videos</h2>
+      
+      <!-- Add New Video Form -->
+      <div style="background: #1C1917; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--accent-gold); margin-bottom: 2rem;">
+        <h3 style="margin-top:0; font-size: 1.1rem; color: var(--accent-gold);">+ Add New YouTube Performance Video</h3>
+        <div class="form-group-grid" style="margin-bottom: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Song Cover Title *</label>
+            <input type="text" id="new-video-title" class="form-input" placeholder="e.g. Perfect - Saxophone Cover">
+          </div>
+          <div class="form-group">
+            <label class="form-label">YouTube URL or Video ID *</label>
+            <input type="text" id="new-video-id" class="form-input" placeholder="e.g. https://youtu.be/ShtHM_xGZwg or ShtHM_xGZwg">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="add-video-btn">+ Add Video to Repertoire</button>
+      </div>
+
+      <!-- Current Videos List -->
+      <h3 style="font-size: 1.1rem; color: #FFFFFF;">Current Repertoire Videos (<span id="videos-count">0</span>)</h3>
+      <p style="font-size: 0.85rem; color: var(--text-light-muted);">Top video is the default video played in the main player.</p>
+      <div class="item-list" id="admin-video-list">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- TAB 4: CLIENT REVIEWS -->
+    <div class="tab-content" id="tab-reviews">
+      <h2 class="admin-section-title">Client Review Screenshots</h2>
+
+      <!-- Add New Review Form -->
+      <div style="background: #1C1917; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--accent-gold); margin-bottom: 2rem;">
+        <h3 style="margin-top:0; font-size: 1.1rem; color: var(--accent-gold);">+ Add New Review Screenshot</h3>
+        <div class="form-group-grid" style="margin-bottom: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Review Image Path *</label>
+            <input type="text" id="new-review-image" class="form-input" placeholder="e.g. reviews/Screenshot_20260730_140119_Facebook.jpg">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Review Title / Caption</label>
+            <input type="text" id="new-review-title" class="form-input" placeholder="e.g. Facebook Recommendation #6">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="add-review-btn">+ Add Review Screenshot</button>
+      </div>
+
+      <!-- Current Reviews List -->
+      <h3 style="font-size: 1.1rem; color: #FFFFFF;">Current Client Reviews (<span id="reviews-count">0</span>)</h3>
+      <div class="item-list" id="admin-review-list">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- TAB 5: BACKUP & EXPORT -->
+    <div class="tab-content" id="tab-export">
+      <h2 class="admin-section-title">Backup, Export & Reset Settings</h2>
+
+      <div style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 600px;">
+        <div style="background: #1C1917; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.1);">
+          <h3 style="color: var(--accent-gold); margin-top:0;">📥 Export Updated config.js File</h3>
+          <p style="font-size: 0.9rem; color: var(--text-light-muted);">
+            Download a permanently updated <code style="color: var(--accent-gold);">config.js</code> file containing all your latest videos, rates, and reviews to keep in your project folder.
+          </p>
+          <button class="btn btn-primary btn-sm" id="export-config-btn">Download Updated config.js</button>
+        </div>
+
+        <div style="background: #1C1917; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid rgba(220,38,38,0.4);">
+          <h3 style="color: #ef4444; margin-top:0;">⚠️ Reset to Default Configuration</h3>
+          <p style="font-size: 0.9rem; color: var(--text-light-muted);">
+            Clear all live localStorage overrides and restore the original default settings from <code style="color: var(--accent-gold);">config.js</code>.
+          </p>
+          <button class="btn btn-danger btn-sm" id="reset-config-btn">Reset All Settings to Default</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Sticky Save Bar -->
+  <div class="save-bar">
+    <div class="admin-container" style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="font-size: 0.9rem; color: var(--text-light-muted);">
+        <strong style="color: var(--accent-gold);">Website Maintenance System</strong> — Changes apply live to website immediately upon saving.
+      </div>
+      <div style="display: flex; gap: 1rem;">
+        <button class="btn btn-primary" id="save-all-btn" style="padding: 0.75rem 2rem;">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>Save Changes Live</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Local copy of active config
+    let activeConfig = JSON.parse(JSON.stringify(window.SITE_CONFIG));
+
+    // Try loading saved config from localStorage
+    const saved = localStorage.getItem('HAROLD_SITE_CONFIG');
+    if (saved) {
+      try {
+        activeConfig = JSON.parse(saved);
+      } catch(e){}
+    }
+
+    // Tab Switcher
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        const target = tab.getAttribute('data-tab');
+        document.getElementById(target)?.classList.add('active');
+      });
+    });
+
+    // Populate Form Inputs
+    function populateForm() {
+      const a = activeConfig.artist || {};
+      const r = activeConfig.rates || {};
+
+      document.getElementById('cfg-artist-name-input').value = a.name || '';
+      document.getElementById('cfg-artist-tagline-input').value = a.tagline || '';
+      document.getElementById('cfg-artist-email-input').value = a.email || '';
+      document.getElementById('cfg-artist-phone-input').value = a.phone || '';
+      document.getElementById('cfg-artist-location-input').value = a.location || '';
+      document.getElementById('cfg-artist-photo-input').value = a.profilePhoto || '';
+      document.getElementById('cfg-tiktok-embed-input').value = a.tiktokEmbedUrl || '';
+      document.getElementById('cfg-tiktok-link-input').value = a.tiktokProfileUrl || '';
+
+      document.getElementById('cfg-deposit-percent-input').value = r.depositPercentage || 30;
+      document.getElementById('cfg-transport-fee-input').value = r.transportFeePampanga || 500;
+      
+      if (r.packageA) {
+        document.getElementById('cfg-pkga-base-input').value = r.packageA.basePrice || 8000;
+        document.getElementById('cfg-pkga-total-input').value = r.packageA.totalPrice || 8500;
+      }
+      if (r.packageB) {
+        document.getElementById('cfg-pkgb-base-input').value = r.packageB.basePrice || 5000;
+        document.getElementById('cfg-pkgb-total-input').value = r.packageB.totalPrice || 5500;
+      }
+
+      renderVideosList();
+      renderReviewsList();
+    }
+
+    // Render Videos List
+    function renderVideosList() {
+      const container = document.getElementById('admin-video-list');
+      const countEl = document.getElementById('videos-count');
+      const videos = activeConfig.videos || [];
+      countEl.textContent = videos.length;
+
+      container.innerHTML = '';
+      videos.forEach((v, idx) => {
+        const row = document.createElement('div');
+        row.className = 'item-row';
+        row.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 1rem; flex-grow: 1;">
+            <img src="https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg" style="width: 70px; height: 45px; border-radius: 4px; object-fit: cover;">
+            <div class="item-row-info">
+              <strong style="color: #FFFFFF; font-size: 0.95rem;">${idx + 1}. ${v.title}</strong>
+              <div style="font-size: 0.8rem; color: var(--accent-gold);">ID: ${v.videoId}</div>
+            </div>
+          </div>
+          <div class="item-row-actions">
+            <button class="btn btn-secondary btn-sm" onclick="moveVideo(${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
+            <button class="btn btn-secondary btn-sm" onclick="moveVideo(${idx}, 1)" ${idx === videos.length - 1 ? 'disabled' : ''}>▼</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteVideo(${idx})">Delete</button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    // Move Video
+    window.moveVideo = function(index, direction) {
+      const videos = activeConfig.videos;
+      const target = index + direction;
+      if (target >= 0 && target < videos.length) {
+        const temp = videos[index];
+        videos[index] = videos[target];
+        videos[target] = temp;
+        renderVideosList();
+      }
+    };
+
+    // Delete Video
+    window.deleteVideo = function(index) {
+      if (confirm(`Remove video "${activeConfig.videos[index].title}"?`)) {
+        activeConfig.videos.splice(index, 1);
+        renderVideosList();
+      }
+    };
+
+    // Add Video
+    document.getElementById('add-video-btn').addEventListener('click', () => {
+      const titleInput = document.getElementById('new-video-title');
+      const idInput = document.getElementById('new-video-id');
+      const title = titleInput.value.trim();
+      let rawId = idInput.value.trim();
+
+      if (!title || !rawId) {
+        alert('Please fill in both video title and YouTube URL/ID');
+        return;
+      }
+
+      // Extract ID from full URL if needed
+      let videoId = rawId;
+      if (rawId.includes('youtu.be/')) {
+        videoId = rawId.split('youtu.be/')[1].split('?')[0];
+      } else if (rawId.includes('youtube.com/watch?v=')) {
+        videoId = rawId.split('watch?v=')[1].split('&')[0];
+      } else if (rawId.includes('youtube.com/shorts/')) {
+        videoId = rawId.split('shorts/')[1].split('?')[0];
+      }
+
+      activeConfig.videos.push({ title, videoId });
+      titleInput.value = '';
+      idInput.value = '';
+      renderVideosList();
+      alert(`Added "${title}" to performance videos!`);
+    });
+
+    // Render Reviews List
+    function renderReviewsList() {
+      const container = document.getElementById('admin-review-list');
+      const countEl = document.getElementById('reviews-count');
+      const reviews = activeConfig.reviews || [];
+      countEl.textContent = reviews.length;
+
+      container.innerHTML = '';
+      reviews.forEach((r, idx) => {
+        const row = document.createElement('div');
+        row.className = 'item-row';
+        row.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 1rem; flex-grow: 1;">
+            <img src="${r.image}" style="width: 50px; height: 50px; border-radius: 4px; object-fit: cover;">
+            <div class="item-row-info">
+              <strong style="color: #FFFFFF; font-size: 0.95rem;">${r.title}</strong>
+              <div style="font-size: 0.8rem; color: var(--text-light-muted);">${r.image}</div>
+            </div>
+          </div>
+          <div class="item-row-actions">
+            <button class="btn btn-danger btn-sm" onclick="deleteReview(${idx})">Delete</button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    // Delete Review
+    window.deleteReview = function(index) {
+      if (confirm(`Remove review screenshot #${index + 1}?`)) {
+        activeConfig.reviews.splice(index, 1);
+        renderReviewsList();
+      }
+    };
+
+    // Add Review
+    document.getElementById('add-review-btn').addEventListener('click', () => {
+      const imgInput = document.getElementById('new-review-image');
+      const titleInput = document.getElementById('new-review-title');
+      const image = imgInput.value.trim();
+      const title = titleInput.value.trim() || `Client Recommendation #${activeConfig.reviews.length + 1}`;
+
+      if (!image) {
+        alert('Please enter review screenshot image path');
+        return;
+      }
+
+      activeConfig.reviews.push({ title, category: "Client Review Feedback", image });
+      imgInput.value = '';
+      titleInput.value = '';
+      renderReviewsList();
+      alert(`Added new review screenshot!`);
+    });
+
+    // Save All Changes Live
+    document.getElementById('save-all-btn').addEventListener('click', () => {
+      // Read current form inputs
+      activeConfig.artist.name = document.getElementById('cfg-artist-name-input').value.trim();
+      activeConfig.artist.tagline = document.getElementById('cfg-artist-tagline-input').value.trim();
+      activeConfig.artist.email = document.getElementById('cfg-artist-email-input').value.trim();
+      activeConfig.artist.phone = document.getElementById('cfg-artist-phone-input').value.trim();
+      activeConfig.artist.location = document.getElementById('cfg-artist-location-input').value.trim();
+      activeConfig.artist.profilePhoto = document.getElementById('cfg-artist-photo-input').value.trim();
+      activeConfig.artist.tiktokEmbedUrl = document.getElementById('cfg-tiktok-embed-input').value.trim();
+      activeConfig.artist.tiktokProfileUrl = document.getElementById('cfg-tiktok-link-input').value.trim();
+
+      const depPct = parseInt(document.getElementById('cfg-deposit-percent-input').value, 10) || 30;
+      const transFee = parseInt(document.getElementById('cfg-transport-fee-input').value, 10) || 500;
+      const pkgaBase = parseInt(document.getElementById('cfg-pkga-base-input').value, 10) || 8000;
+      const pkgaTotal = parseInt(document.getElementById('cfg-pkga-total-input').value, 10) || 8500;
+      const pkgbBase = parseInt(document.getElementById('cfg-pkgb-base-input').value, 10) || 5000;
+      const pkgbTotal = parseInt(document.getElementById('cfg-pkgb-total-input').value, 10) || 5500;
+
+      activeConfig.rates = {
+        depositPercentage: depPct,
+        transportFeePampanga: transFee,
+        packageA: {
+          name: "Package A",
+          subtitle: "Church & Reception Coverage (2 Sets / 2 Hours)",
+          basePrice: pkgaBase,
+          transportFee: transFee,
+          totalPrice: pkgaTotal,
+          depositAmount: Math.round(pkgaTotal * (depPct / 100))
+        },
+        packageB: {
+          name: "Package B",
+          subtitle: "Single Location Coverage (1 Set / 1 Hour)",
+          basePrice: pkgbBase,
+          transportFee: transFee,
+          totalPrice: pkgbTotal,
+          depositAmount: Math.round(pkgbTotal * (depPct / 100))
+        }
+      };
+
+      // Save to localStorage
+      localStorage.setItem('HAROLD_SITE_CONFIG', JSON.stringify(activeConfig));
+      alert('✓ Saved Live! All changes are now live on your website.');
+    });
+
+    // Reset Config
+    document.getElementById('reset-config-btn').addEventListener('click', () => {
+      if (confirm('Are you sure you want to reset all site settings back to original defaults?')) {
+        localStorage.removeItem('HAROLD_SITE_CONFIG');
+        activeConfig = JSON.parse(JSON.stringify(window.SITE_CONFIG));
+        populateForm();
+        alert('Reset to default configuration!');
+      }
+    });
+
+    // Export config.js
+    document.getElementById('export-config-btn').addEventListener('click', () => {
+      const code = `/**\n * HAROLD TRINIDAD - CENTRALIZED WEBSITE CONFIGURATION\n */\n\nwindow.SITE_CONFIG = ${JSON.stringify(activeConfig, null, 2)};\n`;
+      const blob = new Blob([code], { type: 'application/javascript' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'config.js';
+      a.click();
+    });
+
+    // Initial load
+    populateForm();
+  </script>
+</body>
+</html>
