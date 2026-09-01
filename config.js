@@ -23,9 +23,9 @@ window.SITE_CONFIG = {
   adminSecurity: {
     adminEmail: "haroldcalo.trinidad@gmail.com",
     otpExpirationMinutes: 5,
-    emailjsPublicKey: "YOUR_EMAILJS_PUBLIC_KEY",
-    emailjsServiceId: "service_harold_sax",
-    emailjsTemplateId: "template_admin_otp"
+    emailjsPublicKey: "1fzy7njkATDe4UUfw",
+    emailjsServiceId: "service_tpm1twd",
+    emailjsTemplateId: "template_jqqvg4u"
   },
 
   rates: {

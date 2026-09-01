@@ -689,9 +689,9 @@
 
         // Initialize EmailJS & send email to haroldcalo.trinidad@gmail.com
         const sec = activeConfig.adminSecurity || {};
-        const publicKey = sec.emailjsPublicKey !== 'YOUR_EMAILJS_PUBLIC_KEY' ? sec.emailjsPublicKey : 'cQz6b9jXGvN_YOUR_KEY';
-        const serviceId = sec.emailjsServiceId || 'service_harold';
-        const templateId = sec.emailjsTemplateId || 'template_otp';
+        const publicKey = sec.emailjsPublicKey || "1fzy7njkATDe4UUfw";
+        const serviceId = sec.emailjsServiceId || "service_tpm1twd";
+        const templateId = sec.emailjsTemplateId || "template_jqqvg4u";
 
         if (window.emailjs && publicKey && publicKey !== 'YOUR_EMAILJS_PUBLIC_KEY') {
           try {
@@ -699,15 +699,19 @@
             emailjs.send(serviceId, templateId, {
               to_email: adminEmail,
               otp_code: activeOtpCode,
+              passcode: activeOtpCode,
+              time: "5 minutes",
               artist_name: activeConfig.artist?.name || "Harold Trinidad"
             }).then(() => {
               statusMsg.textContent = `✓ 6-Digit OTP Code sent to ${adminEmail}! Please check your email inbox.`;
               statusMsg.style.color = '#22c55e';
             }).catch(err => {
+              console.error('EmailJS Send Error:', err);
               statusMsg.textContent = `✓ 6-Digit OTP Code sent to ${adminEmail}! Please check your email inbox.`;
               statusMsg.style.color = '#22c55e';
             });
           } catch(e) {
+            console.error('EmailJS Init Error:', e);
             statusMsg.textContent = `✓ 6-Digit OTP Code sent to ${adminEmail}! Please check your email inbox.`;
             statusMsg.style.color = '#22c55e';
           }
