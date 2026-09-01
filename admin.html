@@ -693,31 +693,30 @@
         const serviceId = sec.emailjsServiceId || "service_tpm1twd";
         const templateId = sec.emailjsTemplateId || "template_jqqvg4u";
 
-        if (window.emailjs && publicKey && publicKey !== 'YOUR_EMAILJS_PUBLIC_KEY') {
-          try {
-            emailjs.init(publicKey);
-            emailjs.send(serviceId, templateId, {
-              to_email: adminEmail,
-              otp_code: activeOtpCode,
-              passcode: activeOtpCode,
-              time: "5 minutes",
-              artist_name: activeConfig.artist?.name || "Harold Trinidad"
-            }).then(() => {
+        const templateParams = {
+          to_email: adminEmail,
+          otp_code: activeOtpCode,
+          passcode: activeOtpCode,
+          time: "5 minutes",
+          artist_name: activeConfig.artist?.name || "Harold Trinidad"
+        };
+
+        if (window.emailjs) {
+          emailjs.send(serviceId, templateId, templateParams, publicKey)
+            .then((res) => {
+              console.log('EmailJS Success:', res);
               statusMsg.textContent = `✓ 6-Digit OTP Code sent to ${adminEmail}! Please check your email inbox.`;
               statusMsg.style.color = '#22c55e';
-            }).catch(err => {
-              console.error('EmailJS Send Error:', err);
-              statusMsg.textContent = `✓ 6-Digit OTP Code sent to ${adminEmail}! Please check your email inbox.`;
-              statusMsg.style.color = '#22c55e';
+            })
+            .catch((err) => {
+              console.error('EmailJS Error:', err);
+              const errMsg = err.text || err.message || JSON.stringify(err);
+              statusMsg.textContent = `❌ EmailJS Error (${err.status || 400}): ${errMsg}`;
+              statusMsg.style.color = '#ef4444';
             });
-          } catch(e) {
-            console.error('EmailJS Init Error:', e);
-            statusMsg.textContent = `✓ 6-Digit OTP Code sent to ${adminEmail}! Please check your email inbox.`;
-            statusMsg.style.color = '#22c55e';
-          }
         } else {
-          statusMsg.textContent = `✓ 6-Digit OTP Code sent to ${adminEmail}! Please check your email inbox.`;
-          statusMsg.style.color = '#22c55e';
+          statusMsg.textContent = `❌ EmailJS SDK script not loaded. Please check internet connection.`;
+          statusMsg.style.color = '#ef4444';
         }
 
         // Start 60s cooldown timer
