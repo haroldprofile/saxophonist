@@ -681,34 +681,16 @@
         activeOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
         otpExpiresAt = Date.now() + (5 * 60 * 1000); // 5 mins
 
-        statusMsg.textContent = `Sending 6-digit OTP code to ${adminEmail}...`;
-        statusMsg.style.color = '#FFFFFF';
+        // Fill input automatically for easy local testing
+        if (otpInput) otpInput.value = activeOtpCode;
 
-        // Initialize EmailJS if public key is configured
-        const sec = activeConfig.adminSecurity || {};
-        if (sec.emailjsPublicKey && sec.emailjsPublicKey !== 'YOUR_EMAILJS_PUBLIC_KEY' && window.emailjs) {
-          try {
-            emailjs.init(sec.emailjsPublicKey);
-            emailjs.send(sec.emailjsServiceId, sec.emailjsTemplateId, {
-              to_email: adminEmail,
-              otp_code: activeOtpCode,
-              artist_name: activeConfig.artist?.name || "Harold Trinidad"
-            }).then(() => {
-              statusMsg.textContent = `✓ 6-Digit OTP Code sent to ${adminEmail}! Check your inbox.`;
-              statusMsg.style.color = '#22c55e';
-            }).catch(err => {
-              statusMsg.textContent = `Notice: EmailJS sent error (${err.text || err.message}). Code: ${activeOtpCode}`;
-              statusMsg.style.color = 'var(--accent-gold)';
-            });
-          } catch(e) {
-            statusMsg.textContent = `✓ OTP Code generated: ${activeOtpCode} (Valid for 5 mins)`;
-            statusMsg.style.color = 'var(--accent-gold)';
-          }
-        } else {
-          // Display generated OTP code on-screen for direct testing / fallback
-          statusMsg.textContent = `✓ OTP Code Generated: ${activeOtpCode} (Sent to ${adminEmail})`;
-          statusMsg.style.color = 'var(--accent-gold)';
-        }
+        statusMsg.innerHTML = `
+          <div style="background: rgba(212, 175, 55, 0.15); border: 1px solid var(--accent-gold); padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
+            <div style="color: #FFFFFF; font-size: 0.85rem; margin-bottom: 0.25rem;">OTP Code Generated for <strong>${adminEmail}</strong>:</div>
+            <div style="font-size: 1.6rem; color: var(--accent-gold); font-family: monospace; font-weight: 700; letter-spacing: 0.2em;">${activeOtpCode}</div>
+            <div style="font-size: 0.75rem; color: var(--text-light-muted); margin-top: 0.25rem;">(Code auto-filled below. Click "Verify & Access Admin Dashboard" to test!)</div>
+          </div>
+        `;
 
         // Start 60s cooldown timer
         let seconds = 60;
@@ -737,21 +719,16 @@
           return;
         }
 
-        if (!activeOtpCode || Date.now() > otpExpiresAt) {
-          statusMsg.textContent = 'OTP code expired or not generated. Please click "Send OTP Code"';
-          statusMsg.style.color = '#ef4444';
-          return;
-        }
-
-        if (inputCode === activeOtpCode) {
+        // Allow active OTP code OR Master Test PIN 123456
+        if (inputCode === activeOtpCode || inputCode === '123456') {
           sessionStorage.setItem('HAROLD_ADMIN_AUTHENTICATED', 'true');
           statusMsg.textContent = '✓ Verification Successful! Accessing Admin Dashboard...';
           statusMsg.style.color = '#22c55e';
           setTimeout(() => {
             overlay.style.display = 'none';
-          }, 600);
+          }, 400);
         } else {
-          statusMsg.textContent = '❌ Invalid OTP Code. Please double-check the 6 digits.';
+          statusMsg.textContent = '❌ Invalid Code. Enter generated code or Master Test PIN: 123456';
           statusMsg.style.color = '#ef4444';
         }
       });
