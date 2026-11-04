@@ -51,6 +51,8 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {
@@ -59,6 +61,7 @@ body {
   background-color: var(--bg-light);
   color: var(--text-dark);
   overflow-x: hidden;
+  max-width: 100%;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -116,16 +119,19 @@ img, video {
 .badge-gold {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 0.35rem 1rem;
+  padding: 0.4rem 1rem;
   background: var(--accent-gold-light);
   color: var(--accent-gold);
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  border: 1px solid rgba(217, 180, 90, 0.35);
   border-radius: var(--radius-full);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  max-width: 100%;
+  text-align: center;
 }
 
 .section-title-wrap {
@@ -162,6 +168,8 @@ img, video {
   border: 1px solid transparent;
   transition: var(--transition-fast);
   white-space: nowrap;
+  max-width: 100%;
+  text-align: center;
 }
 
 .btn-primary {
@@ -1499,14 +1507,78 @@ img[src*="harold-soprano.jpg"] {
    ANIMATIONS & SCROLL OBSERVER
    ========================================== */
 .fade-in-element {
-  opacity: 1;
-  transform: none;
-  transition: opacity 700ms var(--ease-custom), transform 700ms var(--ease-custom);
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 750ms cubic-bezier(0.22, 1, 0.36, 1), transform 750ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
 }
 
 .fade-in-element.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Luxury Gold Shimmer Headline & Ambient Bokeh */
+.gold-shimmer-text {
+  background: linear-gradient(110deg, #F5E6B3 0%, #D9B45A 35%, #FFF8DC 50%, #D9B45A 65%, #B08A3E 100%);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: goldShimmer 5.5s linear infinite;
+}
+
+@keyframes goldShimmer {
+  0% { background-position: 0% center; }
+  100% { background-position: 220% center; }
+}
+
+.glow-orb-2 {
+  width: 260px;
+  height: 260px;
+  background: rgba(217, 180, 90, 0.14);
+  bottom: 8%;
+  left: -8%;
+  animation: orbFloat 9s ease-in-out infinite alternate;
+}
+
+.glow-orb-1 {
+  animation: orbFloat 7s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes orbFloat {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-18px, 22px) scale(1.12); }
+}
+
+.hero-bokeh-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bokeh-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 222, 145, 0.85) 0%, rgba(217, 180, 90, 0) 70%);
+  opacity: 0.45;
+  animation: bokehRise 10s ease-in-out infinite;
+}
+
+.bokeh-dot:nth-child(1) { width: 10px; height: 10px; left: 12%; top: 75%; animation-duration: 9s; animation-delay: 0s; }
+.bokeh-dot:nth-child(2) { width: 16px; height: 16px; left: 28%; top: 82%; animation-duration: 12s; animation-delay: 1.5s; }
+.bokeh-dot:nth-child(3) { width: 8px; height: 8px; left: 52%; top: 70%; animation-duration: 8.5s; animation-delay: 3s; }
+.bokeh-dot:nth-child(4) { width: 14px; height: 14px; left: 72%; top: 78%; animation-duration: 11s; animation-delay: 0.8s; }
+.bokeh-dot:nth-child(5) { width: 12px; height: 12px; left: 86%; top: 65%; animation-duration: 10s; animation-delay: 2.2s; }
+.bokeh-dot:nth-child(6) { width: 18px; height: 18px; left: 40%; top: 88%; animation-duration: 13s; animation-delay: 4s; }
+
+@keyframes bokehRise {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  30% { opacity: 0.55; }
+  70% { opacity: 0.45; }
+  100% { transform: translateY(-180px) scale(1.2); opacity: 0; }
 }
 
 /* ==========================================
@@ -1515,7 +1587,10 @@ img[src*="harold-soprano.jpg"] {
 @media (max-width: 1024px) {
   .hero-content, .about-grid, .contact-grid {
     grid-template-columns: 1fr;
-    gap: 3rem;
+    gap: 2.5rem;
+  }
+  .hero-content > *, .about-grid > *, .contact-grid > *, .services-grid > *, .player-main-grid > * {
+    min-width: 0;
   }
   .hero {
     text-align: center;
@@ -1545,16 +1620,52 @@ img[src*="harold-soprano.jpg"] {
 }
 
 @media (max-width: 768px) {
+  :root {
+    --header-height: 68px;
+  }
+  .container {
+    padding-left: 1.15rem;
+    padding-right: 1.15rem;
+  }
+  .section-padding {
+    padding-top: 3.75rem;
+    padding-bottom: 3.75rem;
+  }
+  .section-title-wrap {
+    margin-bottom: 2.5rem;
+  }
   .hero {
     padding-top: calc(var(--header-height) + 1.5rem);
-    padding-bottom: 4rem;
+    padding-bottom: 3.5rem;
+  }
+  .badge-gold {
+    white-space: normal;
+    font-size: 0.72rem;
+    padding: 0.35rem 0.85rem;
+    line-height: 1.35;
+  }
+  .btn {
+    white-space: normal;
+    line-height: 1.3;
+    padding: 0.75rem 1.25rem;
   }
   .hero-cta-group {
     flex-direction: column;
     width: 100%;
+    gap: 0.85rem;
   }
   .hero-cta-group .btn {
     width: 100%;
+  }
+  .hero-feature-card {
+    padding: 1.35rem;
+    text-align: left;
+  }
+  .card-stats-grid {
+    gap: 0.5rem;
+  }
+  .stat-num {
+    font-size: 1.35rem;
   }
   .nav-links, .header-cta {
     display: none;
@@ -1564,9 +1675,14 @@ img[src*="harold-soprano.jpg"] {
   }
   .services-grid {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .service-card {
+    padding: 1.75rem 1.35rem;
   }
   .amenities-banner {
     grid-template-columns: 1fr;
+    padding: 1.5rem;
   }
   .gallery-grid {
     grid-template-columns: 1fr;
@@ -1574,8 +1690,28 @@ img[src*="harold-soprano.jpg"] {
   .form-grid {
     grid-template-columns: 1fr;
   }
+  .booking-form-card {
+    padding: 1.5rem 1.25rem;
+  }
+  .info-value {
+    font-size: 0.95rem;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .playlist-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+  #featured-video-container {
+    padding: 1.25rem !important;
+  }
+  #terms div[style*="padding: 2.5rem"] {
+    padding: 1.5rem 1.25rem !important;
+  }
   .footer-grid {
     grid-template-columns: 1fr;
+    gap: 2rem;
   }
   .footer-bottom {
     flex-direction: column;
@@ -1596,13 +1732,13 @@ img[src*="harold-soprano.jpg"] {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 999;
-  background: rgba(28, 25, 23, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(212, 175, 55, 0.4);
-  padding: 0.75rem 1.25rem;
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
+  z-index: 2100;
+  background: rgba(20, 18, 16, 0.95);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-top: 1px solid rgba(217, 180, 90, 0.45);
+  padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom));
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.65);
   transition: transform 300ms ease, opacity 300ms ease;
 }
 
@@ -1611,10 +1747,10 @@ img[src*="harold-soprano.jpg"] {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
   body {
-    padding-bottom: 70px;
+    padding-bottom: calc(74px + env(safe-area-inset-bottom));
   }
 }
 
@@ -1629,12 +1765,13 @@ img[src*="harold-soprano.jpg"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.65rem 1rem;
-  font-size: 0.88rem;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.85rem;
   font-weight: 600;
   border-radius: var(--radius-md);
   text-align: center;
+  white-space: nowrap;
 }
 
 /* ==========================================
@@ -1725,16 +1862,13 @@ img[src*="harold-soprano.jpg"] {
    MOBILE (iOS/ANDROID) + COVER + FAQ + FAB
    ========================================== */
 .hero { min-height: 100svh; }
-.mobile-sticky-cta-bar { padding-bottom: calc(0.75rem + env(safe-area-inset-bottom)); }
-@media (max-width: 768px) {
-  body { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
-  .fab-messenger { bottom: calc(86px + env(safe-area-inset-bottom)); }
-}
 input, textarea, select { font-size: 16px; } /* stops iOS focus zoom */
 a, button { -webkit-tap-highlight-color: transparent; }
 .btn, .mobile-sticky-btn, summary { min-height: 44px; }
+.btn:active, .service-card:active, .gallery-card:active { transform: scale(0.98); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .fade-in-element { opacity: 1 !important; transform: none !important; }
 }
 
 /* Special Request Cover */
@@ -1746,6 +1880,7 @@ a, button { -webkit-tap-highlight-color: transparent; }
   background: linear-gradient(135deg, #141210 0%, #2a2318 100%);
   border: 2px solid var(--accent-gold);
   color: #fff;
+  box-shadow: 0 20px 45px -10px rgba(20, 18, 16, 0.45);
 }
 .cover-tag { display: inline-block; font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--primary-dark); background: var(--accent-gold); padding: .25rem .75rem; border-radius: var(--radius-full); margin-bottom: .75rem; }
 .cover-price { font-family: 'Playfair Display', serif; font-size: 2.25rem; font-weight: 700; color: var(--accent-gold); margin-bottom: .5rem; }
@@ -1756,23 +1891,52 @@ a, button { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 768px) { .cover-card { grid-template-columns: 1fr; gap: 1.25rem; } }
 
 /* FAQ */
-.faq-section details { border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-card); margin-bottom: .75rem; }
+.faq-section details { border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-card); margin-bottom: .75rem; transition: border-color 200ms ease, box-shadow 200ms ease; }
+.faq-section details[open] { border-color: var(--accent-gold); box-shadow: var(--shadow-sm); }
 .faq-section summary { cursor: pointer; padding: 1rem 1.25rem; font-weight: 600; display: flex; align-items: center; list-style: none; }
 .faq-section summary::-webkit-details-marker { display: none; }
 .faq-section summary::after { content: '+'; margin-left: auto; color: var(--accent-gold-hover); font-size: 1.25rem; }
 .faq-section details[open] summary::after { content: '−'; }
 .faq-section details p { padding: 0 1.25rem 1rem; color: var(--text-muted); margin: 0; }
 
-/* Floating Messenger */
+/* Floating Messenger Button — Elevated z-index & Gold Pulse Halo */
 .fab-messenger {
-  position: fixed; right: 1.25rem; bottom: 1.5rem; z-index: 998;
-  width: 56px; height: 56px; border-radius: 50%;
-  display: grid; place-items: center;
-  background: var(--accent-gold); color: var(--primary-dark);
-  box-shadow: 0 10px 25px rgba(0,0,0,.4);
-  transition: transform 200ms ease;
+  position: fixed;
+  right: 1.15rem;
+  bottom: 1.5rem;
+  z-index: 2500;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #E8C972 0%, #D9B45A 55%, #B08A3E 100%);
+  color: var(--primary-dark);
+  border: 2px solid #FFF8DC;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 0 0 rgba(217, 180, 90, 0.65);
+  transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 250ms ease;
+  animation: fabPulseHalo 2.6s infinite cubic-bezier(0.4, 0, 0.6, 1);
+  isolation: isolate;
 }
-.fab-messenger:hover { transform: scale(1.08); }
+.fab-messenger:hover {
+  transform: translateY(-3px) scale(1.08);
+}
+.fab-messenger:active {
+  transform: scale(0.94);
+}
+@keyframes fabPulseHalo {
+  0% { box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 0 0 rgba(217, 180, 90, 0.7); }
+  70% { box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 0 14px rgba(217, 180, 90, 0); }
+  100% { box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 0 0 rgba(217, 180, 90, 0); }
+}
+@media (max-width: 768px) {
+  .fab-messenger {
+    right: 1rem;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    width: 54px;
+    height: 54px;
+  }
+}
 
 /* New photo as hero backdrop */
 .hero-bg-image { background-image: url('profile/harold-soprano.jpg'); background-size: cover; background-position: 62% 25%; }

@@ -247,12 +247,16 @@ function initGalleryLightbox() {
    ========================================== */
 function initScrollObserver() {
   const fadeElements = document.querySelectorAll('.fade-in-element');
-  fadeElements.forEach(el => el.classList.add('visible'));
+
+  if (!('IntersectionObserver' in window)) {
+    fadeElements.forEach(el => el.classList.add('visible'));
+    return;
+  }
 
   const observerOptions = {
     root: null,
-    rootMargin: '50px',
-    threshold: 0.01
+    rootMargin: '0px 0px -30px 0px',
+    threshold: 0.08
   };
 
   const observer = new IntersectionObserver((entries, obs) => {
