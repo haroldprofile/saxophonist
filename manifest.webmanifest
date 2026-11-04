@@ -1,0 +1,11 @@
+﻿{
+  "name": "Harold Trinidad | Saxophonist",
+  "short_name": "Harold Sax",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#141210",
+  "theme_color": "#141210",
+  "icons": [
+    { "src": "profile/harold-soprano.jpg", "sizes": "800x1202", "type": "image/jpeg", "purpose": "any" }
+  ]
+}

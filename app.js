@@ -476,3 +476,27 @@ function initMobileStickyBar() {
 
   observer.observe(contactSection);
 }
+
+
+/* Special Request Cover: copy request text, open Messenger (m.me can't prefill reliably) */
+(function initCoverForm() {
+  const form = document.getElementById('cover-form');
+  if (!form) return;
+  const cfg = (typeof getSiteConfig === 'function' ? getSiteConfig() : window.SITE_CONFIG) || {};
+  const price = cfg.rates?.specialCover ?? 1000;
+  document.querySelectorAll('.cfg-cover-price').forEach(el => el.textContent = price.toLocaleString());
+  const buildMsg = () => {
+    const d = new FormData(form);
+    return `Hi Harold! Special Request Cover (₱${price.toLocaleString()})\nName: ${d.get('name')}\nSong: ${d.get('song')}\nDedication: ${d.get('msg') || '-'}`;
+  };
+  form.addEventListener('input', () => {
+    document.getElementById('cover-mail').href =
+      `mailto:haroldcalo.trinidad@gmail.com?subject=${encodeURIComponent('Special Request Cover')}&body=${encodeURIComponent(buildMsg())}`;
+  });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = buildMsg();
+    try { await navigator.clipboard.writeText(msg); alert('Request copied! Paste it in Messenger and send.'); } catch (_) {}
+    window.open(`https://m.me/harold.calotrinidad?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
+  });
+})();

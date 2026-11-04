@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -184,7 +184,7 @@
   <header class="admin-header">
     <div class="admin-container" style="display: flex; align-items: center; justify-content: space-between;">
       <div style="display: flex; align-items: center; gap: 1rem;">
-        <img src="profile/file_00000000275c81f789a05fa008e02553.png" alt="Harold Trinidad" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: 50% 15%; border: 2px solid var(--accent-gold);">
+        <img src="profile/harold-soprano.jpg" alt="Harold Trinidad" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: 55% 22%; border: 2px solid var(--accent-gold);">
         <div>
           <h1 style="font-size: 1.25rem; margin: 0; font-family: 'Playfair Display', serif; color: #FFFFFF;">Harold Trinidad Website Admin</h1>
           <p style="font-size: 0.8rem; color: var(--accent-gold); margin: 0;">Protected by OTP (haroldcalo.trinidad@gmail.com)</p>
@@ -292,6 +292,10 @@
         <div class="form-group">
           <label class="form-label">Package B Total Price (₱)</label>
           <input type="number" id="cfg-pkgb-total-input" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Special Request Cover Price (₱)</label>
+          <input type="number" id="cfg-cover-price-input" class="form-input">
         </div>
       </div>
     </div>
@@ -437,6 +441,7 @@
       if (r.packageB) {
         document.getElementById('cfg-pkgb-base-input').value = r.packageB.basePrice || 5000;
         document.getElementById('cfg-pkgb-total-input').value = r.packageB.totalPrice || 5500;
+      document.getElementById('cfg-cover-price-input').value = r.specialCover || 1000;
       }
 
       renderVideosList();
@@ -595,6 +600,7 @@
       const pkgbTotal = parseInt(document.getElementById('cfg-pkgb-total-input').value, 10) || 5500;
 
       activeConfig.rates = {
+        specialCover: parseInt(document.getElementById('cfg-cover-price-input').value, 10) || 1000,
         depositPercentage: depPct,
         transportFeePampanga: transFee,
         packageA: {

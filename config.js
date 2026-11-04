@@ -1,4 +1,4 @@
-/**
+﻿/**
  * HAROLD TRINIDAD - CENTRALIZED WEBSITE CONFIGURATION
  * Edit this file directly or use the visual Admin Dashboard (admin.html)
  * to update prices, contact info, performance videos, and client reviews!
@@ -11,7 +11,7 @@ window.SITE_CONFIG = {
     email: "haroldcalo.trinidad@gmail.com",
     phone: "+63 (917) 000-0000",
     location: "Pampanga Area (Available Nationwide)",
-    profilePhoto: "profile/file_00000000275c81f789a05fa008e02553.png",
+    profilePhoto: "profile/harold-soprano.jpg",
     tiktokEmbedUrl: "https://www.tiktok.com/embed/v2/7617274994745199890",
     tiktokProfileUrl: "https://vt.tiktok.com/ZS4YLm2HK",
     facebookUrl: "https://facebook.com/harold.calotrinidad",
@@ -29,6 +29,7 @@ window.SITE_CONFIG = {
   },
 
   rates: {
+    specialCover: 1000,
     depositPercentage: 30,
     transportFeePampanga: 500,
     packageA: {

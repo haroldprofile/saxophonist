@@ -1,4 +1,4 @@
-/* ==========================================
+﻿/* ==========================================
    DESIGN SYSTEM - CLASSIC ELEGANT LUXURY
    ========================================== */
 
@@ -6,11 +6,11 @@
 
 :root {
   /* Color Palette */
-  --primary-dark: #1C1917;       /* Stone-900 Deep Charcoal */
+  --primary-dark: #141210;       /* Deep warm black (matches photo) */
   --secondary-slate: #44403C;    /* Stone-700 Warm Slate */
-  --accent-gold: #D4AF37;        /* Classic Gold */
-  --accent-gold-hover: #CA8A04;  /* Rich Darker Gold */
-  --accent-gold-light: rgba(212, 175, 55, 0.15);
+  --accent-gold: #D9B45A;        /* Champagne Gold */
+  --accent-gold-hover: #B08A3E;  /* Deep Gold */
+  --accent-gold-light: rgba(217, 180, 90, 0.15);
   --bg-light: #FAFAF9;           /* Stone-50 Soft Warm White */
   --bg-card: #FFFFFF;            /* Pure White */
   --bg-dark-card: #262320;       /* Dark Card */
@@ -458,14 +458,14 @@ img, video {
   height: 68px;
   border-radius: 50%;
   object-fit: cover;
-  object-position: 50% 15%;
+  object-position: 55% 22%;
   border: 2px solid var(--accent-gold);
   box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
 }
 
-img[src*="file_00000000275c81f789a05fa008e02553"] {
+img[src*="harold-soprano.jpg"] {
   object-fit: cover !important;
-  object-position: 50% 15% !important;
+  object-position: 55% 22% !important;
 }
 
 .artist-info-title {
@@ -1708,3 +1708,60 @@ img[src*="file_00000000275c81f789a05fa008e02553"] {
   box-shadow: 0 25px 50px -10px rgba(212, 175, 55, 0.25);
   transform: translateY(-4px);
 }
+
+
+/* ==========================================
+   MOBILE (iOS/ANDROID) + COVER + FAQ + FAB
+   ========================================== */
+.hero { min-height: 100svh; }
+.mobile-sticky-cta-bar { padding-bottom: calc(0.75rem + env(safe-area-inset-bottom)); }
+@media (max-width: 768px) {
+  body { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+  .fab-messenger { bottom: calc(86px + env(safe-area-inset-bottom)); }
+}
+input, textarea, select { font-size: 16px; } /* stops iOS focus zoom */
+a, button { -webkit-tap-highlight-color: transparent; }
+.btn, .mobile-sticky-btn, summary { min-height: 44px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Special Request Cover */
+.cover-card {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  background: linear-gradient(135deg, #141210 0%, #2a2318 100%);
+  border: 2px solid var(--accent-gold);
+  color: #fff;
+}
+.cover-tag { display: inline-block; font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--primary-dark); background: var(--accent-gold); padding: .25rem .75rem; border-radius: var(--radius-full); margin-bottom: .75rem; }
+.cover-price { font-family: 'Playfair Display', serif; font-size: 2.25rem; font-weight: 700; color: var(--accent-gold); margin-bottom: .5rem; }
+.cover-price small { font-size: .9rem; color: var(--text-light-muted); font-weight: 400; }
+.cover-form { display: flex; flex-direction: column; gap: .75rem; }
+.cover-form .form-input { background: rgba(255,255,255,.06); border: 1px solid rgba(217,180,90,.35); color: #fff; border-radius: var(--radius-md); padding: .8rem 1rem; width: 100%; }
+.cover-mail { text-align: center; font-size: .85rem; color: var(--text-light-muted); }
+@media (max-width: 768px) { .cover-card { grid-template-columns: 1fr; gap: 1.25rem; } }
+
+/* FAQ */
+.faq-section details { border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-card); margin-bottom: .75rem; }
+.faq-section summary { cursor: pointer; padding: 1rem 1.25rem; font-weight: 600; display: flex; align-items: center; list-style: none; }
+.faq-section summary::-webkit-details-marker { display: none; }
+.faq-section summary::after { content: '+'; margin-left: auto; color: var(--accent-gold-hover); font-size: 1.25rem; }
+.faq-section details[open] summary::after { content: '−'; }
+.faq-section details p { padding: 0 1.25rem 1rem; color: var(--text-muted); margin: 0; }
+
+/* Floating Messenger */
+.fab-messenger {
+  position: fixed; right: 1.25rem; bottom: 1.5rem; z-index: 998;
+  width: 56px; height: 56px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--accent-gold); color: var(--primary-dark);
+  box-shadow: 0 10px 25px rgba(0,0,0,.4);
+  transition: transform 200ms ease;
+}
+.fab-messenger:hover { transform: scale(1.08); }
+
+/* New photo as hero backdrop */
+.hero-bg-image { background-image: url('profile/harold-soprano.jpg'); background-size: cover; background-position: 62% 25%; }
