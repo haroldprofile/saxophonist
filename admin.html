@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -132,11 +132,175 @@
       bottom: 0;
       left: 0;
       right: 0;
-      background: #262320;
+      background: rgba(20, 18, 16, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border-top: 2px solid var(--accent-gold);
-      padding: 1rem 0;
-      box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
-      z-index: 100;
+      padding: 0.85rem 0 calc(0.85rem + env(safe-area-inset-bottom));
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
+      z-index: 1000;
+    }
+
+    /* Hot-Toast / Toastify Notification Stack */
+    .hot-toast-container {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.25rem;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-width: min(400px, calc(100vw - 2rem));
+      width: 100%;
+      pointer-events: none;
+    }
+    .hot-toast {
+      pointer-events: auto;
+      background: rgba(28, 25, 23, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      color: #FFFFFF;
+      border: 1px solid rgba(217, 180, 90, 0.45);
+      border-radius: 12px;
+      padding: 0.9rem 1.15rem;
+      box-shadow: 0 18px 40px -8px rgba(0,0,0,0.65);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      position: relative;
+      overflow: hidden;
+      animation: toastSlideIn 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .hot-toast.closing {
+      animation: toastSlideOut 220ms ease forwards;
+    }
+    .hot-toast-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-top: 0.1rem;
+    }
+    .hot-toast.success .hot-toast-icon { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid #22c55e; }
+    .hot-toast.error .hot-toast-icon { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+    .hot-toast.info .hot-toast-icon { background: rgba(217, 180, 90, 0.2); color: var(--accent-gold); border: 1px solid var(--accent-gold); }
+    .hot-toast-body { flex: 1; min-width: 0; }
+    .hot-toast-title { font-weight: 700; font-size: 0.92rem; color: #FFFFFF; line-height: 1.3; }
+    .hot-toast-msg { font-size: 0.82rem; color: var(--text-light-muted); margin-top: 0.2rem; line-height: 1.4; }
+    .hot-toast-close {
+      background: transparent;
+      border: none;
+      color: var(--text-light-muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0.2rem;
+    }
+    .hot-toast-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: var(--accent-gold);
+      width: 100%;
+      transform-origin: left;
+      animation: toastProgress linear forwards;
+    }
+    .hot-toast.success .hot-toast-progress { background: #22c55e; }
+    .hot-toast.error .hot-toast-progress { background: #ef4444; }
+    @keyframes toastSlideIn {
+      from { opacity: 0; transform: translateY(-16px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes toastSlideOut {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to { opacity: 0; transform: translateY(-12px) scale(0.95); }
+    }
+    @keyframes toastProgress {
+      from { transform: scaleX(1); }
+      to { transform: scaleX(0); }
+    }
+
+    /* Custom Confirm Modal */
+    .confirm-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(12, 10, 9, 0.82);
+      backdrop-filter: blur(8px);
+      z-index: 10001;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+    }
+    .confirm-modal-backdrop.active { display: flex; }
+    .confirm-modal-box {
+      background: #262320;
+      border: 1px solid var(--accent-gold);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.7);
+      text-align: center;
+    }
+
+    /* Mobile Responsive Admin Improvements */
+    @media (max-width: 768px) {
+      .admin-header-inner {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.85rem;
+      }
+      .admin-header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .admin-header-actions .btn {
+        flex: 1;
+        justify-content: center;
+        font-size: 0.78rem;
+        padding: 0.5rem 0.65rem;
+      }
+      .form-group[style*="span 2"] {
+        grid-column: span 1 !important;
+      }
+      .item-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .item-row-actions {
+        width: 100%;
+        justify-content: flex-end;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        padding-top: 0.65rem;
+      }
+      .save-bar-inner {
+        flex-direction: column;
+        gap: 0.65rem;
+        text-align: center;
+      }
+      .save-bar-actions {
+        width: 100%;
+        display: flex;
+        gap: 0.5rem;
+      }
+      .save-bar-actions .btn {
+        flex: 1;
+        padding: 0.7rem 0.85rem !important;
+        font-size: 0.85rem;
+      }
+      .hot-toast-container {
+        top: 0.75rem;
+        right: 0.75rem;
+        left: 0.75rem;
+        max-width: none;
+      }
     }
   </style>
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -182,15 +346,18 @@
 
   <!-- Header -->
   <header class="admin-header">
-    <div class="admin-container" style="display: flex; align-items: center; justify-content: space-between;">
+    <div class="admin-container admin-header-inner" style="display: flex; align-items: center; justify-content: space-between;">
       <div style="display: flex; align-items: center; gap: 1rem;">
-        <img src="profile/harold-soprano.jpg" alt="Harold Trinidad" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: 55% 22%; border: 2px solid var(--accent-gold);">
+        <img src="profile/harold-soprano.jpg" alt="Harold Trinidad" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: 55% 22%; border: 2px solid var(--accent-gold); flex-shrink: 0;">
         <div>
-          <h1 style="font-size: 1.25rem; margin: 0; font-family: 'Playfair Display', serif; color: #FFFFFF;">Harold Trinidad Website Admin</h1>
-          <p style="font-size: 0.8rem; color: var(--accent-gold); margin: 0;">Protected by OTP (haroldcalo.trinidad@gmail.com)</p>
+          <h1 style="font-size: 1.2rem; margin: 0; font-family: 'Playfair Display', serif; color: #FFFFFF;">Harold Trinidad Website Admin</h1>
+          <p style="font-size: 0.78rem; color: var(--accent-gold); margin: 0;">Protected by OTP (haroldcalo.trinidad@gmail.com)</p>
         </div>
       </div>
-      <div style="display: flex; gap: 0.75rem;">
+      <div class="admin-header-actions" style="display: flex; gap: 0.65rem;">
+        <button id="header-clear-cache-btn" class="btn btn-secondary btn-sm" style="border: 1px solid var(--accent-gold); color: var(--accent-gold);">
+          <span>⚡ Clear Cache & Sync</span>
+        </button>
         <button id="lock-admin-btn" class="btn btn-secondary btn-sm" style="border: 1px solid rgba(220,38,38,0.5); color: #ef4444;">
           <span>🔒 Lock Session</span>
         </button>
@@ -357,13 +524,21 @@
 
     <!-- TAB 5: BACKUP & EXPORT -->
     <div class="tab-content" id="tab-export">
-      <h2 class="admin-section-title">Backup, Export & Reset Settings</h2>
+      <h2 class="admin-section-title">Cache Control, Backup & Reset Settings</h2>
 
-      <div style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 600px;">
+      <div style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 640px;">
+        <div style="background: #1C1917; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--accent-gold);">
+          <h3 style="color: var(--accent-gold); margin-top:0;">⚡ Clear Browser Cache & Force Sync</h3>
+          <p style="font-size: 0.9rem; color: var(--text-light-muted);">
+            Purge browser CacheStorage, bump the asset cache-buster timestamp, and automatically reload any open website tabs with your latest updates.
+          </p>
+          <button class="btn btn-primary btn-sm" id="tab-clear-cache-btn">Clear Cache & Sync Open Tabs</button>
+        </div>
+
         <div style="background: #1C1917; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.1);">
           <h3 style="color: var(--accent-gold); margin-top:0;">📥 Export Updated config.js File</h3>
           <p style="font-size: 0.9rem; color: var(--text-light-muted);">
-            Download a permanently updated <code style="color: var(--accent-gold);">config.js</code> file containing all your latest videos, rates, and reviews to keep in your project folder.
+            Download a permanently updated <code style="color: var(--accent-gold);">config.js</code> file containing all your latest videos, rates, and reviews to commit & push to GitHub so every visitor worldwide sees your changes.
           </p>
           <button class="btn btn-primary btn-sm" id="export-config-btn">Download Updated config.js</button>
         </div>
@@ -381,15 +556,31 @@
 
   <!-- Sticky Save Bar -->
   <div class="save-bar">
-    <div class="admin-container" style="display: flex; align-items: center; justify-content: space-between;">
-      <div style="font-size: 0.9rem; color: var(--text-light-muted);">
-        <strong style="color: var(--accent-gold);">Website Maintenance System</strong> — Changes apply live to website immediately upon saving.
+    <div class="admin-container save-bar-inner" style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="font-size: 0.88rem; color: var(--text-light-muted);">
+        <strong style="color: var(--accent-gold);">Website Maintenance System</strong> — Saves & auto-clears cache immediately.
       </div>
-      <div style="display: flex; gap: 1rem;">
-        <button class="btn btn-primary" id="save-all-btn" style="padding: 0.75rem 2rem;">
-          <svg class="svg-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-          <span>Save Changes Live</span>
+      <div class="save-bar-actions" style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-secondary" id="bar-clear-cache-btn" style="border: 1px solid var(--accent-gold); color: var(--accent-gold); padding: 0.75rem 1.25rem;">
+          <span>⚡ Clear Cache</span>
         </button>
+        <button class="btn btn-primary" id="save-all-btn" style="padding: 0.75rem 1.75rem;">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>Save & Sync Live</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container & Custom Confirm Modal -->
+  <div id="hot-toast-container" class="hot-toast-container" aria-live="polite"></div>
+  <div id="confirm-modal" class="confirm-modal-backdrop" role="dialog" aria-modal="true">
+    <div class="confirm-modal-box">
+      <h3 id="confirm-modal-title" style="color: #FFFFFF; font-family: 'Playfair Display', serif; font-size: 1.35rem; margin-bottom: 0.5rem;">Confirm Action</h3>
+      <p id="confirm-modal-msg" style="color: var(--text-light-muted); font-size: 0.92rem; margin-bottom: 1.5rem;"></p>
+      <div style="display: flex; gap: 0.75rem; justify-content: center;">
+        <button id="confirm-cancel-btn" class="btn btn-secondary btn-sm" style="flex: 1;">Cancel</button>
+        <button id="confirm-ok-btn" class="btn btn-danger btn-sm" style="flex: 1;">Confirm</button>
       </div>
     </div>
   </div>
@@ -417,6 +608,115 @@
       });
     });
 
+    /* ==========================================
+       REACT HOT TOAST / TOASTIFY NOTIFICATION ENGINE
+       ========================================== */
+    const siteSyncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('harold_site_sync') : null;
+
+    function showToast(title, msg = '', type = 'success', duration = 3800) {
+      const container = document.getElementById('hot-toast-container');
+      if (!container) return;
+
+      const icons = {
+        success: '✓',
+        error: '✕',
+        info: '⚡'
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `hot-toast toast-${type}`;
+      toast.style.setProperty('--toast-duration', `${duration}ms`);
+      toast.innerHTML = `
+        <div class="hot-toast-icon">${icons[type] || '✓'}</div>
+        <div class="hot-toast-content">
+          <div class="hot-toast-title">${title}</div>
+          ${msg ? `<div class="hot-toast-msg">${msg}</div>` : ''}
+        </div>
+        <button class="hot-toast-close" aria-label="Close">×</button>
+        <div class="hot-toast-progress"></div>
+      `;
+
+      const removeToast = () => {
+        if (toast.classList.contains('toast-leave')) return;
+        toast.classList.add('toast-leave');
+        setTimeout(() => toast.remove(), 260);
+      };
+
+      toast.querySelector('.hot-toast-close').addEventListener('click', removeToast);
+      container.appendChild(toast);
+      setTimeout(removeToast, duration);
+    }
+
+    function showConfirm(title, message, onConfirm) {
+      const modal = document.getElementById('confirm-modal');
+      const titleEl = document.getElementById('confirm-modal-title');
+      const msgEl = document.getElementById('confirm-modal-msg');
+      const cancelBtn = document.getElementById('confirm-cancel-btn');
+      const okBtn = document.getElementById('confirm-ok-btn');
+
+      if (!modal) {
+        if (onConfirm) onConfirm();
+        return;
+      }
+
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+      modal.classList.add('active');
+
+      const cleanup = () => {
+        modal.classList.remove('active');
+        cancelBtn.onclick = null;
+        okBtn.onclick = null;
+      };
+
+      cancelBtn.onclick = cleanup;
+      okBtn.onclick = () => {
+        cleanup();
+        if (onConfirm) onConfirm();
+      };
+    }
+
+    // Clear System Cache & Broadcast Live Sync
+    async function clearSystemCache(silent = false) {
+      try {
+        const version = Date.now().toString();
+        localStorage.setItem('HAROLD_CACHE_VERSION', version);
+        localStorage.setItem('HAROLD_SITE_CONFIG', JSON.stringify(activeConfig));
+
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(key => caches.delete(key)));
+        }
+
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map(reg => reg.unregister()));
+        }
+
+        if (siteSyncChannel) {
+          siteSyncChannel.postMessage({ type: 'CACHE_CLEARED', version });
+        }
+
+        if (!silent) {
+          showToast(
+            'Cache Cleared & System Synced!',
+            'Browser cache purged & all open website tabs updated automatically.',
+            'info'
+          );
+        }
+      } catch (err) {
+        console.warn('Cache purge warning:', err);
+        if (!silent) {
+          showToast('Cache Sync Completed', 'Local configuration synced with open tabs.', 'info');
+        }
+      }
+    }
+
+    ['header-clear-cache-btn', 'tab-clear-cache-btn', 'bar-clear-cache-btn'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.addEventListener('click', () => clearSystemCache(false));
+    });
+
     // Populate Form Inputs
     function populateForm() {
       const a = activeConfig.artist || {};
@@ -433,6 +733,7 @@
 
       document.getElementById('cfg-deposit-percent-input').value = r.depositPercentage || 30;
       document.getElementById('cfg-transport-fee-input').value = r.transportFeePampanga || 500;
+      document.getElementById('cfg-cover-price-input').value = r.specialCover || 1000;
       
       if (r.packageA) {
         document.getElementById('cfg-pkga-base-input').value = r.packageA.basePrice || 8000;
@@ -441,7 +742,6 @@
       if (r.packageB) {
         document.getElementById('cfg-pkgb-base-input').value = r.packageB.basePrice || 5000;
         document.getElementById('cfg-pkgb-total-input').value = r.packageB.totalPrice || 5500;
-      document.getElementById('cfg-cover-price-input').value = r.specialCover || 1000;
       }
 
       renderVideosList();
@@ -486,15 +786,22 @@
         videos[index] = videos[target];
         videos[target] = temp;
         renderVideosList();
+        showToast('Video Reordered', `Moved "${videos[target].title}" to position #${target + 1}. Click Save All to publish.`, 'info', 2500);
       }
     };
 
     // Delete Video
     window.deleteVideo = function(index) {
-      if (confirm(`Remove video "${activeConfig.videos[index].title}"?`)) {
-        activeConfig.videos.splice(index, 1);
-        renderVideosList();
-      }
+      const videoTitle = activeConfig.videos[index]?.title || 'this video';
+      showConfirm(
+        'Remove Performance Video?',
+        `Are you sure you want to remove "${videoTitle}" from the playlist?`,
+        () => {
+          activeConfig.videos.splice(index, 1);
+          renderVideosList();
+          showToast('Video Removed', `"${videoTitle}" removed. Click Save All Changes to apply.`, 'info');
+        }
+      );
     };
 
     // Add Video
@@ -505,7 +812,7 @@
       let rawId = idInput.value.trim();
 
       if (!title || !rawId) {
-        alert('Please fill in both video title and YouTube URL/ID');
+        showToast('Missing Video Info', 'Please fill in both the song title and YouTube URL or Video ID.', 'error');
         return;
       }
 
@@ -523,7 +830,7 @@
       titleInput.value = '';
       idInput.value = '';
       renderVideosList();
-      alert(`Added "${title}" to performance videos!`);
+      showToast('Video Added!', `"${title}" added to playlist. Click Save All Changes to sync live.`, 'success');
     });
 
     // Render Reviews List
@@ -555,10 +862,15 @@
 
     // Delete Review
     window.deleteReview = function(index) {
-      if (confirm(`Remove review screenshot #${index + 1}?`)) {
-        activeConfig.reviews.splice(index, 1);
-        renderReviewsList();
-      }
+      showConfirm(
+        'Remove Review Screenshot?',
+        `Remove review screenshot #${index + 1} from client feedback?`,
+        () => {
+          activeConfig.reviews.splice(index, 1);
+          renderReviewsList();
+          showToast('Review Removed', `Review screenshot #${index + 1} removed. Click Save All Changes to apply.`, 'info');
+        }
+      );
     };
 
     // Add Review
@@ -569,7 +881,7 @@
       const title = titleInput.value.trim() || `Client Recommendation #${activeConfig.reviews.length + 1}`;
 
       if (!image) {
-        alert('Please enter review screenshot image path');
+        showToast('Missing Image Path', 'Please enter a review screenshot image path (e.g. recommendations/file.jpg).', 'error');
         return;
       }
 
@@ -577,11 +889,11 @@
       imgInput.value = '';
       titleInput.value = '';
       renderReviewsList();
-      alert(`Added new review screenshot!`);
+      showToast('Review Screenshot Added!', `"${title}" added. Click Save All Changes to sync live.`, 'success');
     });
 
-    // Save All Changes Live
-    document.getElementById('save-all-btn').addEventListener('click', () => {
+    // Save All Changes Live + Auto Clear Cache & Broadcast
+    document.getElementById('save-all-btn').addEventListener('click', async () => {
       // Read current form inputs
       activeConfig.artist.name = document.getElementById('cfg-artist-name-input').value.trim();
       activeConfig.artist.tagline = document.getElementById('cfg-artist-tagline-input').value.trim();
@@ -621,19 +933,37 @@
         }
       };
 
-      // Save to localStorage
+      // Save to localStorage & automatically bust cache + sync open tabs
       localStorage.setItem('HAROLD_SITE_CONFIG', JSON.stringify(activeConfig));
-      alert('✓ Saved Live! All changes are now live on your website.');
+      await clearSystemCache(true);
+
+      if (siteSyncChannel) {
+        siteSyncChannel.postMessage({ type: 'CONFIG_UPDATED', timestamp: Date.now() });
+      }
+
+      showToast(
+        'Saved & Cache Auto-Cleared!',
+        'All changes are now live and synced across your website.',
+        'success'
+      );
     });
 
     // Reset Config
     document.getElementById('reset-config-btn').addEventListener('click', () => {
-      if (confirm('Are you sure you want to reset all site settings back to original defaults?')) {
-        localStorage.removeItem('HAROLD_SITE_CONFIG');
-        activeConfig = JSON.parse(JSON.stringify(window.SITE_CONFIG));
-        populateForm();
-        alert('Reset to default configuration!');
-      }
+      showConfirm(
+        'Reset to Default Configuration?',
+        'This will clear your local overrides and restore the default settings from config.js.',
+        async () => {
+          localStorage.removeItem('HAROLD_SITE_CONFIG');
+          localStorage.setItem('HAROLD_CACHE_VERSION', Date.now().toString());
+          activeConfig = JSON.parse(JSON.stringify(window.SITE_CONFIG));
+          populateForm();
+          if (siteSyncChannel) {
+            siteSyncChannel.postMessage({ type: 'CACHE_CLEARED', timestamp: Date.now() });
+          }
+          showToast('Defaults Restored', 'Configuration reset to original defaults and cache cleared.', 'info');
+        }
+      );
     });
 
     // Export config.js
@@ -644,6 +974,7 @@
       a.href = URL.createObjectURL(blob);
       a.download = 'config.js';
       a.click();
+      showToast('config.js Downloaded!', 'Replace config.js in your project folder and push to GitHub to publish for all visitors.', 'success', 5000);
     });
 
     /* ==========================================

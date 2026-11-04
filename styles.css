@@ -1940,3 +1940,284 @@ a, button { -webkit-tap-highlight-color: transparent; }
 
 /* New photo as hero backdrop */
 .hero-bg-image { background-image: url('profile/harold-soprano.jpg'); background-size: cover; background-position: 62% 25%; }
+
+/* ==========================================
+   EVENT SETLIST & INSTANT QUOTATION BUILDER
+   ========================================== */
+.quote-builder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 1.1rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.quote-ref-badge {
+  background: var(--primary-dark);
+  color: var(--accent-gold);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(217, 180, 90, 0.45);
+  white-space: nowrap;
+}
+
+.form-section-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-gold-hover);
+  margin: 1.25rem 0 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px dashed rgba(176, 138, 62, 0.35);
+}
+
+.form-section-label:first-of-type {
+  margin-top: 0;
+}
+
+.quick-song-chips,
+.quick-condition-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+}
+
+.song-chip-btn,
+.cond-chip-btn {
+  background: #FAF6EE;
+  border: 1px solid rgba(176, 138, 62, 0.4);
+  color: var(--primary-dark);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 180ms ease;
+  min-height: 34px;
+}
+
+.song-chip-btn:hover,
+.cond-chip-btn:hover {
+  background: var(--accent-gold);
+  border-color: var(--accent-gold);
+  color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.song-rows-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.song-row-card {
+  background: #FAF8F5;
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--accent-gold);
+  border-radius: var(--radius-md);
+  padding: 0.9rem;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.song-row-card:hover {
+  border-color: var(--accent-gold);
+  box-shadow: var(--shadow-sm);
+}
+
+.song-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.song-row-badge {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary-dark);
+  background: rgba(217, 180, 90, 0.25);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.song-row-remove {
+  background: rgba(239, 68, 68, 0.1);
+  color: #B91C1C;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+  min-height: 30px;
+}
+
+.song-row-remove:hover {
+  background: #EF4444;
+  color: #FFFFFF;
+}
+
+.song-row-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 0.6rem;
+}
+
+.song-row-grid .form-input,
+.song-row-grid .form-select {
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  background: #FFFFFF;
+}
+
+.add-song-btn {
+  width: 100%;
+  border-style: dashed;
+  border-width: 1.5px;
+  border-color: var(--accent-gold-hover);
+  color: var(--primary-dark);
+  background: rgba(217, 180, 90, 0.08);
+  font-size: 0.9rem;
+}
+
+.add-song-btn:hover {
+  background: rgba(217, 180, 90, 0.2);
+}
+
+/* Live Itemized Quotation Card */
+.quotation-preview-card {
+  margin-top: 1.35rem;
+  background: linear-gradient(145deg, #171412 0%, #241F1A 100%);
+  border: 1.5px solid var(--accent-gold);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  color: #FFFFFF;
+  box-shadow: 0 14px 32px rgba(20, 18, 16, 0.25);
+}
+
+.quotation-preview-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding-bottom: 0.85rem;
+  margin-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(217, 180, 90, 0.25);
+}
+
+.quotation-preview-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--accent-gold);
+  margin-bottom: 0.2rem;
+}
+
+.quotation-preview-pkg {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.quotation-preview-badge {
+  background: rgba(217, 180, 90, 0.18);
+  color: var(--accent-gold);
+  border: 1px solid rgba(217, 180, 90, 0.45);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.quotation-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+}
+
+.quotation-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  color: #D6D3D1;
+}
+
+.quotation-line strong {
+  color: #FFFFFF;
+}
+
+.quotation-line-total {
+  margin-top: 0.4rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed rgba(217, 180, 90, 0.35);
+  font-size: 1.02rem;
+  color: #FFFFFF;
+}
+
+.quotation-line-total strong {
+  color: var(--accent-gold);
+  font-size: 1.15rem;
+}
+
+.quotation-line-deposit {
+  background: rgba(217, 180, 90, 0.14);
+  border: 1px solid rgba(217, 180, 90, 0.35);
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  margin-top: 0.35rem;
+  color: #FFF8DC;
+}
+
+.quotation-line-deposit strong {
+  color: var(--accent-gold);
+  font-size: 1.1rem;
+}
+
+.quote-export-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1.15rem;
+}
+
+.quote-export-btn {
+  background: #FAF6EE;
+  border: 1.5px solid var(--accent-gold-hover);
+  color: var(--primary-dark);
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0.75rem 0.9rem;
+}
+
+.quote-export-btn:hover {
+  background: var(--accent-gold);
+  color: var(--primary-dark);
+}
+
+@media (max-width: 640px) {
+  .song-row-grid {
+    grid-template-columns: 1fr;
+  }
+  .quote-export-actions {
+    grid-template-columns: 1fr;
+  }
+  .quotation-preview-top {
+    flex-direction: column;
+  }
+}
