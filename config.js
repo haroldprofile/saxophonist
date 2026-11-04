@@ -1,4 +1,4 @@
-﻿/**
+/**
  * HAROLD TRINIDAD - CENTRALIZED WEBSITE CONFIGURATION
  * Edit this file directly or use the visual Admin Dashboard (admin.html)
  * to update prices, contact info, performance videos, and client reviews!
@@ -7,7 +7,7 @@
 window.SITE_CONFIG = {
   artist: {
     name: "Harold Trinidad",
-    tagline: "Making Your Special Day Even More Memorable with Live Saxophone Music",
+    tagline: "Elegant Live Saxophone Music for Weddings, Corporate Galas, and Private Celebrations",
     email: "haroldcalo.trinidad@gmail.com",
     phone: "+63 (917) 000-0000",
     location: "Pampanga Area (Available Nationwide)",
