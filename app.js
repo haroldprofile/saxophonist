@@ -1250,58 +1250,56 @@ function initBookingForm() {
       await navigator.clipboard.writeText(summaryText);
     } catch (_) {}
 
-    // Send automatic email notification via EmailJS if configured
-    const config = getSiteConfig();
-    const sec = config.adminSecurity || {};
+    // Send booking email via EmailJS - report the REAL result, never fake success
+    const sec = (getSiteConfig().adminSecurity) || {};
     const emailjsKey = sec.emailjsPublicKey || "1fzy7njkATDe4UUfw";
     const serviceId = sec.emailjsServiceId || "service_tpm1twd";
     const bookingTemplateId = sec.emailjsBookingTemplateId || "template_booking";
+    let emailError = '';
 
-    if (window.emailjs && emailjsKey && serviceId && bookingTemplateId) {
+    if (!window.emailjs) {
+      emailError = 'EmailJS library did not load (blocked or offline)';
+    } else {
+      const songLines = data.songs.length > 0
+        ? data.songs.map((s, i) => `${i + 1}. [${s.moment}] "${s.title}" by ${s.artist}${s.ytLink ? ' (' + s.ytLink + ')' : ''}${s.isCustom ? ' [+₱500 Custom]' : ''}`).join('\n')
+        : 'None specified yet (Standard repertoire)';
       try {
-        emailjs.init(emailjsKey);
-        const songLines = data.songs.length > 0
-          ? data.songs.map((s, i) => `${i + 1}. [${s.moment}] "${s.title}" by ${s.artist}${s.ytLink ? ' (' + s.ytLink + ')' : ''}${s.isCustom ? ' [+₱500 Custom]' : ''}`).join('\n')
-          : 'None specified yet (Standard repertoire)';
-
         await Promise.race([
           emailjs.send(serviceId, bookingTemplateId, {
-          client_name: data.clientName,
-          client_phone: data.clientPhone,
-          client_email: data.clientEmail,
-          event_type: data.eventType,
-          event_date: data.eventDate,
-          event_time: data.eventTime,
-          set_coverage: `${data.settingVal} (${data.pkgVal || 'Package A'})`,
-          event_venue: data.eventVenue,
-          coverage_area: data.areaVal,
-          total_quotation: `₱${data.totalAmount.toLocaleString()}${data.isOutside ? ' + Travel' : ''}`,
-          deposit_amount: `₱${data.depositAmount.toLocaleString()}`,
-          song_list: songLines,
-          special_notes: data.eventNotes,
-          quote_ref: data.refId,
-          to_email: sec.adminEmail || "haroldcalo.trinidad@gmail.com"
-        }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('EmailJS timeout after 6s')), 6000))
+            client_name: data.clientName,
+            client_phone: data.clientPhone,
+            client_email: data.clientEmail,
+            event_type: data.eventType,
+            event_date: data.eventDate,
+            event_time: data.eventTime,
+            set_coverage: `${data.settingVal} (${data.pkgVal || 'Package A'})`,
+            event_venue: data.eventVenue,
+            coverage_area: data.areaVal,
+            total_quotation: `₱${data.totalAmount.toLocaleString()}${data.isOutside ? ' + Travel' : ''}`,
+            deposit_amount: `₱${data.depositAmount.toLocaleString()}`,
+            song_list: songLines,
+            special_notes: data.eventNotes,
+            quote_ref: data.refId,
+            to_email: sec.adminEmail || "haroldcalo.trinidad@gmail.com"
+          }, emailjsKey),
+          new Promise((_, rej) => setTimeout(() => rej({ text: 'timed out after 8s' }), 8000))
         ]);
-        showSiteToast('Inquiry Sent to Harold!', 'Your quotation & setlist was sent to Harold via email.');
-      } catch (emailErr) {
-        console.warn('EmailJS booking notice could not send (check template ID):', emailErr);
+      } catch (err) {
+        emailError = `${err && err.status ? err.status + ' ' : ''}${(err && (err.text || err.message)) || 'unknown error'}`;
+        console.error('Booking email failed:', err);
       }
     }
 
-    setTimeout(() => {
-      if (submitBtn) submitBtn.disabled = false;
-      if (spinner) spinner.style.display = 'none';
-      if (btnText) btnText.textContent = 'Submit Quotation & Send Setlist to Harold';
+    if (submitBtn) submitBtn.disabled = false;
+    if (spinner) spinner.style.display = 'none';
+    if (btnText) btnText.textContent = 'Submit Quotation & Send Setlist to Harold';
 
-      showSiteToast(
-        'Quotation & Setlist Sent!',
-        'Inquiry sent to Harold\'s email & copied to clipboard! Opening Messenger...'
-      );
-
-      window.open(`https://m.me/harold.calotrinidad?text=${encodeURIComponent(summaryText)}`, '_blank', 'noopener');
-    }, 600);
+    if (emailError) {
+      showSiteToast('Email not delivered', `${emailError}. Opening Messenger instead - paste the copied setlist and send.`);
+    } else {
+      showSiteToast('Inquiry Sent to Harold!', 'Email delivered. Opening Messenger so you can also chat directly...');
+    }
+    setTimeout(() => window.open(`https://m.me/harold.calotrinidad?text=${encodeURIComponent(summaryText)}`, '_blank', 'noopener'), 900);
   });
 }
 

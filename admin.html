@@ -344,6 +344,8 @@
     </div>
   </div>
 
+  <!-- Dashboard markup lives in an inert template: it is NOT in the DOM until OTP verification passes -->
+  <template id="admin-app-template">
   <!-- Header -->
   <header class="admin-header">
     <div class="admin-container admin-header-inner" style="display: flex; align-items: center; justify-content: space-between;">
@@ -596,6 +598,7 @@
       </div>
     </div>
   </div>
+  </template>
 
   <script>
     // Local copy of active config
@@ -608,6 +611,15 @@
         activeConfig = JSON.parse(saved);
       } catch(e){}
     }
+
+    function bootAdmin() {
+    if (window.__adminBooted) return;
+    window.__adminBooted = true;
+    document.body.appendChild(document.getElementById('admin-app-template').content.cloneNode(true));
+    document.getElementById('lock-admin-btn').addEventListener('click', () => {
+      sessionStorage.removeItem('HAROLD_ADMIN_SESSION_EXP');
+      location.reload();
+    });
 
     // Tab Switcher
     document.querySelectorAll('.admin-tab').forEach(tab => {
@@ -1056,14 +1068,22 @@
       showToast('config.js Downloaded!', 'Replace config.js in your project folder and push to GitHub to publish for all visitors.', 'success', 5000);
     });
 
+    populateForm();
+    } // end bootAdmin
+
     /* ==========================================
        EMAIL OTP SECURITY CONTROLLER
+       The dashboard is only mounted (bootAdmin) after a valid OTP.
+       The OTP itself is never kept in memory in plain text: only a salted hash.
+       NOTE: this is a client-side lock on a static site. See README note: real
+       protection of publishing comes from the GitHub token that only lives in Harold's browser.
        ========================================== */
-    const adminEmail = (activeConfig.adminSecurity && activeConfig.adminSecurity.adminEmail) 
+    const adminEmail = (activeConfig.adminSecurity && activeConfig.adminSecurity.adminEmail)
                        || "haroldcalo.trinidad@gmail.com";
-    let activeOtpCode = null;
-    let otpExpiresAt = 0;
-    let cooldownTimer = null;
+    const SESSION_KEY = 'HAROLD_ADMIN_SESSION_EXP';
+    const SESSION_MS = 30 * 60 * 1000;
+    const MAX_TRIES = 5;
+    let otpHash = null, otpSalt = '', otpExpiresAt = 0, otpTries = 0, cooldownTimer = null;
 
     const overlay = document.getElementById('otp-lock-overlay');
     const sendOtpBtn = document.getElementById('send-otp-btn');
@@ -1071,123 +1091,89 @@
     const otpInput = document.getElementById('otp-code-input');
     const statusMsg = document.getElementById('otp-status-msg');
     const timerMsg = document.getElementById('otp-timer-msg');
-    const lockBtn = document.getElementById('lock-admin-btn');
 
-    // Check if session is already authenticated
-    if (sessionStorage.getItem('HAROLD_ADMIN_AUTHENTICATED') === 'true') {
+    sessionStorage.removeItem('HAROLD_ADMIN_AUTHENTICATED'); // retire old forgeable flag
+
+    async function sha256Hex(text) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    function say(msg, color) { statusMsg.textContent = msg; statusMsg.style.color = color; }
+    function unlock() {
+      sessionStorage.setItem(SESSION_KEY, String(Date.now() + SESSION_MS));
       overlay.style.display = 'none';
+      bootAdmin();
+    }
+
+    if (Number(sessionStorage.getItem(SESSION_KEY) || 0) > Date.now()) {
+      unlock();
     } else {
       overlay.style.display = 'flex';
     }
 
-    // Lock session action
-    if (lockBtn) {
-      lockBtn.addEventListener('click', () => {
-        sessionStorage.removeItem('HAROLD_ADMIN_AUTHENTICATED');
-        overlay.style.display = 'flex';
-        statusMsg.textContent = 'Session locked. Please verify OTP to access.';
-        statusMsg.style.color = 'var(--accent-gold)';
-      });
-    }
+    // Send 6-Digit OTP
+    sendOtpBtn.addEventListener('click', async () => {
+      const code = String(100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000));
+      otpSalt = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('');
+      otpHash = await sha256Hex(otpSalt + code);
+      otpExpiresAt = Date.now() + (5 * 60 * 1000);
+      otpTries = 0;
+      otpInput.value = '';
+      say('Sending 6-digit OTP code to ' + adminEmail + '...', '#FFFFFF');
 
-    // Send 6-Digit OTP Action
-    if (sendOtpBtn) {
-      sendOtpBtn.addEventListener('click', () => {
-        // Generate random 6-digit code
-        activeOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
-        otpExpiresAt = Date.now() + (5 * 60 * 1000); // 5 mins
+      const sec = activeConfig.adminSecurity || {};
+      const publicKey = sec.emailjsPublicKey || "1fzy7njkATDe4UUfw";
+      const serviceId = sec.emailjsServiceId || "service_tpm1twd";
+      const templateId = sec.emailjsTemplateId || "template_jqqvg4u";
+      const templateParams = {
+        to_email: adminEmail, email: adminEmail, user_email: adminEmail, recipient: adminEmail,
+        to_name: "Harold Trinidad", otp_code: code, passcode: code, time: "5 minutes",
+        artist_name: activeConfig.artist?.name || "Harold Trinidad"
+      };
 
-        statusMsg.textContent = `Sending 6-digit OTP code to ${adminEmail}...`;
-        statusMsg.style.color = '#FFFFFF';
+      if (window.emailjs) {
+        emailjs.send(serviceId, templateId, templateParams, publicKey)
+          .then(() => say('✓ 6-Digit OTP Code sent to ' + adminEmail + '! Please check your email inbox.', '#22c55e'))
+          .catch((err) => say('❌ EmailJS Error (' + (err.status || 400) + '): ' + (err.text || err.message || JSON.stringify(err)), '#ef4444'));
+      } else {
+        say('❌ EmailJS SDK script not loaded. Please check internet connection.', '#ef4444');
+      }
 
-        // Clear input box
-        if (otpInput) otpInput.value = '';
-
-        // Initialize EmailJS & send email to haroldcalo.trinidad@gmail.com
-        const sec = activeConfig.adminSecurity || {};
-        const publicKey = sec.emailjsPublicKey || "1fzy7njkATDe4UUfw";
-        const serviceId = sec.emailjsServiceId || "service_tpm1twd";
-        const templateId = sec.emailjsTemplateId || "template_jqqvg4u";
-
-        const templateParams = {
-          to_email: adminEmail,
-          email: adminEmail,
-          user_email: adminEmail,
-          recipient: adminEmail,
-          to_name: "Harold Trinidad",
-          otp_code: activeOtpCode,
-          passcode: activeOtpCode,
-          time: "5 minutes",
-          artist_name: activeConfig.artist?.name || "Harold Trinidad"
-        };
-
-        if (window.emailjs) {
-          emailjs.send(serviceId, templateId, templateParams, publicKey)
-            .then((res) => {
-              console.log('EmailJS Success:', res);
-              statusMsg.textContent = `✓ 6-Digit OTP Code sent to ${adminEmail}! Please check your email inbox.`;
-              statusMsg.style.color = '#22c55e';
-            })
-            .catch((err) => {
-              console.error('EmailJS Error:', err);
-              const errMsg = err.text || err.message || JSON.stringify(err);
-              statusMsg.textContent = `❌ EmailJS Error (${err.status || 400}): ${errMsg}`;
-              statusMsg.style.color = '#ef4444';
-            });
-        } else {
-          statusMsg.textContent = `❌ EmailJS SDK script not loaded. Please check internet connection.`;
-          statusMsg.style.color = '#ef4444';
+      let seconds = 60;
+      sendOtpBtn.disabled = true;
+      timerMsg.style.display = 'block';
+      if (cooldownTimer) clearInterval(cooldownTimer);
+      cooldownTimer = setInterval(() => {
+        seconds--;
+        timerMsg.textContent = 'Resend available in ' + seconds + 's';
+        if (seconds <= 0) {
+          clearInterval(cooldownTimer);
+          sendOtpBtn.disabled = false;
+          timerMsg.style.display = 'none';
         }
+      }, 1000);
+    });
 
-        // Start 60s cooldown timer
-        let seconds = 60;
-        sendOtpBtn.disabled = true;
-        timerMsg.style.display = 'block';
-        if (cooldownTimer) clearInterval(cooldownTimer);
-        cooldownTimer = setInterval(() => {
-          seconds--;
-          timerMsg.textContent = `Resend available in ${seconds}s`;
-          if (seconds <= 0) {
-            clearInterval(cooldownTimer);
-            sendOtpBtn.disabled = false;
-            timerMsg.style.display = 'none';
-          }
-        }, 1000);
-      });
-    }
-
-    // Verify OTP Action
-    if (verifyOtpBtn) {
-      verifyOtpBtn.addEventListener('click', () => {
-        const inputCode = otpInput.value.trim();
-        if (!inputCode) {
-          statusMsg.textContent = 'Please enter the 6-digit code sent to your email inbox';
-          statusMsg.style.color = '#ef4444';
-          return;
-        }
-
-        if (!activeOtpCode || Date.now() > otpExpiresAt) {
-          statusMsg.textContent = 'OTP code expired or not generated. Please click "Send 6-Digit OTP Code to Gmail"';
-          statusMsg.style.color = '#ef4444';
-          return;
-        }
-
-        if (inputCode === activeOtpCode) {
-          sessionStorage.setItem('HAROLD_ADMIN_AUTHENTICATED', 'true');
-          statusMsg.textContent = '✓ Verification Successful! Accessing Admin Dashboard...';
-          statusMsg.style.color = '#22c55e';
-          setTimeout(() => {
-            overlay.style.display = 'none';
-          }, 400);
-        } else {
-          statusMsg.textContent = '❌ Invalid OTP Code. Please check the 6 digits sent to your email.';
-          statusMsg.style.color = '#ef4444';
-        }
-      });
-    }
-
-    // Initial load
-    populateForm();
+    // Verify OTP (max 5 wrong tries per code)
+    verifyOtpBtn.addEventListener('click', async () => {
+      const inputCode = otpInput.value.trim();
+      if (!inputCode) return say('Please enter the 6-digit code sent to your email inbox', '#ef4444');
+      if (!otpHash || Date.now() > otpExpiresAt) {
+        return say('OTP code expired or not generated. Please click "Send 6-Digit OTP Code to Gmail"', '#ef4444');
+      }
+      if (otpTries >= MAX_TRIES) {
+        otpHash = null;
+        return say('Too many wrong attempts. Please request a new code.', '#ef4444');
+      }
+      otpTries++;
+      if (await sha256Hex(otpSalt + inputCode) === otpHash) {
+        otpHash = null; // single use
+        say('✓ Verification Successful! Accessing Admin Dashboard...', '#22c55e');
+        setTimeout(unlock, 400);
+      } else {
+        say('❌ Invalid OTP Code (' + (MAX_TRIES - otpTries) + ' tries left).', '#ef4444');
+      }
+    });
   </script>
 </body>
 </html>
