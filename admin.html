@@ -535,6 +535,18 @@
           <button class="btn btn-primary btn-sm" id="tab-clear-cache-btn">Clear Cache & Sync Open Tabs</button>
         </div>
 
+        <div style="background: #1C1917; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid rgba(217,180,90,0.45);">
+          <h3 style="color: var(--accent-gold); margin-top:0;">🌐 Global Cross-Device Sync (Optional GitHub Fine-Grained Token)</h3>
+          <p style="font-size: 0.88rem; color: var(--text-light-muted);">
+            Want your Admin edits to automatically update <strong>all phones and visitors worldwide</strong> without downloading <code style="color: var(--accent-gold);">config.js</code>? Paste a GitHub Fine-Grained Personal Access Token (scoped only to <code style="color: var(--accent-gold);">haroldprofile/saxophonist</code> → Contents: Read &amp; Write). It is stored strictly inside this browser only and never exposed publicly.
+          </p>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
+            <input type="password" id="github-pat-input" class="form-input" placeholder="github_pat_..." style="flex: 1; min-width: 220px;">
+            <button type="button" class="btn btn-primary btn-sm" id="save-gh-pat-btn">Save Token</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="clear-gh-pat-btn">Remove</button>
+          </div>
+        </div>
+
         <div style="background: #1C1917; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.1);">
           <h3 style="color: var(--accent-gold); margin-top:0;">📥 Export Updated config.js File</h3>
           <p style="font-size: 0.9rem; color: var(--text-light-muted);">
@@ -941,12 +953,79 @@
         siteSyncChannel.postMessage({ type: 'CONFIG_UPDATED', timestamp: Date.now() });
       }
 
+      // Optional Global GitHub Live Publish if fine-grained token is configured
+      const ghPat = localStorage.getItem('HAROLD_GH_PAT');
+      if (ghPat) {
+        try {
+          showToast('Publishing Globally to GitHub...', 'Syncing updated config.js to haroldprofile/saxophonist for all devices.', 'info', 2800);
+          const apiUrl = 'https://api.github.com/repos/haroldprofile/saxophonist/contents/config.js';
+          const getRes = await fetch(apiUrl, {
+            headers: {
+              'Authorization': `Bearer ${ghPat}`,
+              'Accept': 'application/vnd.github+json'
+            }
+          });
+          if (getRes.ok) {
+            const fileMeta = await getRes.json();
+            const code = `/**\n * HAROLD TRINIDAD - CENTRALIZED WEBSITE CONFIGURATION\n */\n\nwindow.SITE_CONFIG = ${JSON.stringify(activeConfig, null, 2)};\n`;
+            const base64Content = btoa(unescape(encodeURIComponent(code)));
+            const putRes = await fetch(apiUrl, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${ghPat}`,
+                'Accept': 'application/vnd.github+json',
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                message: 'chore(admin): live config update from Admin Dashboard',
+                content: base64Content,
+                sha: fileMeta.sha
+              })
+            });
+            if (putRes.ok) {
+              showToast('Published Worldwide & Cache Cleared!', 'Updated config.js committed to GitHub Pages — all devices will receive your update.', 'success', 5000);
+              return;
+            }
+          }
+          showToast('Saved Locally (GitHub Token Check Needed)', 'Saved on this device, but GitHub API returned an error. Check your token permissions in Tab 5.', 'error', 5000);
+          return;
+        } catch (err) {
+          console.warn('GitHub sync error:', err);
+        }
+      }
+
       showToast(
         'Saved & Cache Auto-Cleared!',
-        'All changes are now live and synced across your website.',
+        'All changes are live on this browser. Use Tab 5 to publish globally to all devices.',
         'success'
       );
     });
+
+    // GitHub Fine-Grained PAT Controls
+    const ghPatInput = document.getElementById('github-pat-input');
+    const saveGhPatBtn = document.getElementById('save-gh-pat-btn');
+    const clearGhPatBtn = document.getElementById('clear-gh-pat-btn');
+    if (ghPatInput) {
+      ghPatInput.value = localStorage.getItem('HAROLD_GH_PAT') || '';
+    }
+    if (saveGhPatBtn && ghPatInput) {
+      saveGhPatBtn.addEventListener('click', () => {
+        const val = ghPatInput.value.trim();
+        if (!val) {
+          showToast('Empty Token', 'Please paste a valid GitHub Fine-Grained Token.', 'error');
+          return;
+        }
+        localStorage.setItem('HAROLD_GH_PAT', val);
+        showToast('Global Sync Token Saved!', 'Clicking Save All Changes will now automatically publish to GitHub for all devices.', 'success');
+      });
+    }
+    if (clearGhPatBtn && ghPatInput) {
+      clearGhPatBtn.addEventListener('click', () => {
+        localStorage.removeItem('HAROLD_GH_PAT');
+        ghPatInput.value = '';
+        showToast('Token Removed', 'Removed GitHub token from this browser.', 'info');
+      });
+    }
 
     // Reset Config
     document.getElementById('reset-config-btn').addEventListener('click', () => {

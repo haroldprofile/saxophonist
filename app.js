@@ -69,12 +69,16 @@ async function loadClientDetails() {
     });
   }
   if (artist.phone) {
+    const cleanTel = artist.phone.replace(/[^+\d]/g, '');
     document.querySelectorAll('.cfg-target-phone').forEach(el => {
       el.textContent = artist.phone;
-      if (el.tagName === 'A') el.href = `tel:${artist.phone.replace(/[^+\d]/g, '')}`;
+      if (el.tagName === 'A') el.href = `tel:${cleanTel}`;
     });
     document.querySelectorAll('.cfg-target-phone-link').forEach(el => {
-      el.href = `tel:${artist.phone.replace(/[^+\d]/g, '')}`;
+      el.href = `tel:${cleanTel}`;
+    });
+    document.querySelectorAll('.cfg-target-call-label').forEach(el => {
+      el.textContent = `Call ${artist.phone}`;
     });
   }
   if (artist.location) {
@@ -154,9 +158,19 @@ async function loadClientDetails() {
 }
 
 /* ==========================================
-   2. LIVE QUOTATION & MULTI-SONG SETLIST ENGINE
+   2. LIVE QUOTATION & MODAL SONG TABLE ENGINE
    ========================================== */
 let currentQuoteRef = 'HT-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000);
+
+let requestedSongsState = [
+  {
+    moment: 'Dinner / Reception',
+    title: 'Through The Years',
+    artist: 'Kenny Rogers',
+    ytLink: 'https://youtu.be/ShtHM_xGZwg',
+    isCustom: false
+  }
+];
 
 function showSiteToast(title, message) {
   const toast = document.getElementById('toast-notification');
@@ -171,26 +185,99 @@ function showSiteToast(title, message) {
 }
 
 function getRequestedSongsList() {
-  const rows = document.querySelectorAll('#song-rows-list .song-row-card');
-  const songs = [];
-  rows.forEach((row, idx) => {
-    const moment = row.querySelector('.song-moment-select')?.value || 'Performance Set';
-    const title = row.querySelector('.song-title-input')?.value.trim() || '';
-    const artist = row.querySelector('.song-artist-input')?.value.trim() || '';
-    const ytLink = row.querySelector('.song-yt-input')?.value.trim() || '';
-    const arrType = row.querySelector('.song-arr-select')?.value || 'standard';
-    if (title || artist || ytLink) {
-      songs.push({
-        index: idx + 1,
-        moment,
-        title: title || 'Untitled Song',
-        artist: artist || 'Standard Artist',
-        ytLink,
-        isCustom: arrType === 'custom'
-      });
-    }
+  return requestedSongsState.map((s, idx) => ({
+    ...s,
+    index: idx + 1
+  }));
+}
+
+function renderRequestedSongsTable() {
+  const tbody = document.getElementById('song-table-body');
+  const countBadge = document.getElementById('song-count-badge');
+  if (!tbody) return;
+
+  if (countBadge) {
+    countBadge.textContent = requestedSongsState.length;
+  }
+
+  if (requestedSongsState.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 1.35rem; color: var(--text-muted); font-style: italic;">
+          No songs in your list yet. Click <strong>"+ Add Song (Open Song Modal)"</strong> or tap a popular song above!
+        </td>
+      </tr>
+    `;
+    calculateLiveQuotation();
+    return;
+  }
+
+  tbody.innerHTML = requestedSongsState.map((s, idx) => `
+    <tr>
+      <td style="font-weight: 700; color: var(--accent-gold-hover);">#${idx + 1}</td>
+      <td><span style="background: #FAF6EE; border: 1px solid rgba(176,138,62,0.35); padding: 0.18rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600;">${s.moment}</span></td>
+      <td style="font-weight: 700;">${s.title}</td>
+      <td>${s.artist}</td>
+      <td>${s.ytLink ? `<a href="${s.ytLink}" target="_blank" rel="noopener" style="color: var(--accent-gold-hover); font-weight: 600; text-decoration: underline;">▶ YouTube Link</a>` : '<span style="color: var(--text-muted); font-size: 0.78rem;">Standard</span>'}</td>
+      <td>${s.isCustom ? '<span style="color: #B45309; font-weight: 700; font-size: 0.78rem;">+₱500 Custom</span>' : '<span style="color: #15803D; font-weight: 600; font-size: 0.78rem;">Repertoire (Free)</span>'}</td>
+      <td style="text-align: center;">
+        <button type="button" class="song-table-delete-btn" data-del-idx="${idx}" aria-label="Delete song">✕ Delete</button>
+      </td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('.song-table-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = parseInt(btn.getAttribute('data-del-idx'), 10);
+      const removed = requestedSongsState.splice(i, 1);
+      renderRequestedSongsTable();
+      if (removed[0]) {
+        showSiteToast('Song Removed', `Removed "${removed[0].title}" from your setlist table.`);
+      }
+    });
   });
-  return songs;
+
+  calculateLiveQuotation();
+}
+
+function updateVenueBlocksUI() {
+  const venueSetting = document.getElementById('venue-setting');
+  const venue2Block = document.getElementById('venue-2-block');
+  const venue1Heading = document.getElementById('venue-1-heading');
+  const venue1Label = document.getElementById('venue-1-label');
+  if (!venueSetting) return;
+
+  const val = venueSetting.value;
+  const isDualVenue = val.includes('2 Sets') || val.includes('+');
+
+  if (venue2Block) {
+    venue2Block.style.display = isDualVenue ? 'block' : 'none';
+  }
+
+  if (venue1Heading && venue1Label) {
+    if (isDualVenue) {
+      venue1Heading.textContent = '📍 Venue 1: Ceremony Location (Church / Garden / School)';
+      venue1Label.textContent = 'Ceremony Venue Name & Full Address *';
+    } else if (val.includes('Church')) {
+      venue1Heading.textContent = '⛪ Church Ceremony Location';
+      venue1Label.textContent = 'Church Name & Full Address *';
+    } else if (val.includes('Reception')) {
+      venue1Heading.textContent = '🥂 Reception / Banquet Hall Location';
+      venue1Label.textContent = 'Reception Venue Name & Full Address *';
+    } else if (val.includes('Garden')) {
+      venue1Heading.textContent = '🌿 Garden / Outdoor Venue Location';
+      venue1Label.textContent = 'Garden Venue Name & Full Address *';
+    } else if (val.includes('Hotel')) {
+      venue1Heading.textContent = '🏨 Hotel / Ballroom Location';
+      venue1Label.textContent = 'Hotel Name & Full Address *';
+    } else if (val.includes('School')) {
+      venue1Heading.textContent = '🎓 School / University Campus Location';
+      venue1Label.textContent = 'School / Campus Name & Full Address *';
+    } else {
+      venue1Heading.textContent = '📍 Event Venue Location';
+      venue1Label.textContent = 'Venue Name & Full Address *';
+    }
+  }
 }
 
 function calculateLiveQuotation() {
@@ -223,7 +310,7 @@ function calculateLiveQuotation() {
   } else if (pkgVal.includes('Custom')) {
     isCustomQuote = true;
     basePrice = pkga.basePrice || 8000;
-    pkgLabel = `Custom Event Quotation — ${settingVal}`;
+    pkgLabel = `Custom Quotation — ${settingVal}`;
   }
 
   const isOutside = areaVal === 'Outside Pampanga' || isCustomQuote;
@@ -244,10 +331,10 @@ function calculateLiveQuotation() {
   const depositCostEl = document.getElementById('summary-deposit-cost');
 
   if (pkgTitleEl) pkgTitleEl.textContent = pkgLabel;
-  if (areaBadgeEl) areaBadgeEl.textContent = isOutside ? 'Outside Pampanga / Custom' : 'Pampanga Rate';
+  if (areaBadgeEl) areaBadgeEl.textContent = isOutside ? 'Custom / Price Varies' : 'Pampanga Rate';
   if (areaLabelEl) areaLabelEl.textContent = areaVal;
-  if (baseCostEl) baseCostEl.textContent = `₱${basePrice.toLocaleString()}`;
-  if (transCostEl) transCostEl.textContent = isOutside ? 'Subject to Venue Distance' : `₱${transportCost.toLocaleString()}`;
+  if (baseCostEl) baseCostEl.textContent = isCustomQuote ? `₱${basePrice.toLocaleString()} (Starting Base — Varies)` : `₱${basePrice.toLocaleString()}`;
+  if (transCostEl) transCostEl.textContent = isOutside ? 'Varies by Venue Distance' : `₱${transportCost.toLocaleString()}`;
 
   if (customRowEl) {
     customRowEl.style.display = customSongsCount > 0 ? 'flex' : 'none';
@@ -257,12 +344,12 @@ function calculateLiveQuotation() {
 
   if (totalCostEl) {
     totalCostEl.textContent = isOutside
-      ? `₱${totalAmount.toLocaleString()} + Travel Fee`
+      ? `₱${totalAmount.toLocaleString()}+ (Price Varies by Location/Setup)`
       : `₱${totalAmount.toLocaleString()}`;
   }
   if (depositCostEl) {
     depositCostEl.textContent = isOutside
-      ? `₱${depositAmount.toLocaleString()} (${depPct}% Base Deposit)`
+      ? `₱${depositAmount.toLocaleString()}+ (${depPct}% of Final Agreed Quote)`
       : `₱${depositAmount.toLocaleString()} (${depPct}% Downpayment)`;
   }
 
@@ -273,6 +360,7 @@ function calculateLiveQuotation() {
     settingVal,
     areaVal,
     isOutside,
+    isCustomQuote,
     basePrice,
     transportCost,
     customSongsCount,
@@ -294,22 +382,24 @@ function initDepositCalculator() {
 
   if (pkgSelect && venueSetting) {
     pkgSelect.addEventListener('change', () => {
-      if (pkgSelect.value === 'Package A') {
+      if (pkgSelect.value === 'Package A' && !venueSetting.value.includes('2 Sets')) {
         venueSetting.value = 'Church & Reception (2 Sets)';
       } else if (pkgSelect.value === 'Package B' && venueSetting.value.includes('2 Sets')) {
         venueSetting.value = 'Church Ceremony Only (1 Set)';
       }
+      updateVenueBlocksUI();
       calculateLiveQuotation();
     });
   }
 
   if (venueSetting && pkgSelect) {
     venueSetting.addEventListener('change', () => {
-      if (venueSetting.value.includes('2 Sets')) {
+      if (venueSetting.value.includes('2 Sets') && pkgSelect.value === 'Package B') {
         pkgSelect.value = 'Package A';
-      } else if (venueSetting.value.includes('1 Set')) {
+      } else if (venueSetting.value.includes('1 Set') && pkgSelect.value === 'Package A') {
         pkgSelect.value = 'Package B';
       }
+      updateVenueBlocksUI();
       calculateLiveQuotation();
     });
   }
@@ -318,6 +408,7 @@ function initDepositCalculator() {
     locationArea.addEventListener('change', calculateLiveQuotation);
   }
 
+  updateVenueBlocksUI();
   calculateLiveQuotation();
 }
 
@@ -504,7 +595,7 @@ function initScrollObserver() {
 }
 
 /* ==========================================
-   6. BESPOKE BOOKING FORM, SETLIST & PDF/IMAGE EXPORT
+   6. BESPOKE BOOKING FORM, MODAL SONG TABLE, GOOGLE MAPS & PDF/IMAGE EXPORT
    ========================================== */
 function collectFullFormData() {
   const quote = calculateLiveQuotation();
@@ -514,8 +605,16 @@ function collectFullFormData() {
   const eventType = document.getElementById('event-type')?.value || 'Wedding Ceremony & Reception';
   const eventDate = document.getElementById('event-date')?.value || 'TBD';
   const eventTime = document.getElementById('event-time')?.value.trim() || 'Flexible / TBD';
-  const eventVenue = document.getElementById('event-venue')?.value.trim() || 'TBD Venue';
+  const eventVenue1 = document.getElementById('event-venue')?.value.trim() || 'TBD Venue';
+  const venue1Map = document.getElementById('venue-1-map')?.value.trim() || '';
+  const eventVenue2 = document.getElementById('event-venue-2')?.value.trim() || '';
+  const venue2Map = document.getElementById('venue-2-map')?.value.trim() || '';
   const eventNotes = document.getElementById('event-notes')?.value.trim() || 'Standard performance setup.';
+
+  const isDualVenue = quote.settingVal.includes('2 Sets') || quote.settingVal.includes('+');
+  const combinedVenue = (isDualVenue && eventVenue2)
+    ? `Venue 1: ${eventVenue1} | Venue 2: ${eventVenue2}`
+    : eventVenue1;
 
   return {
     ...quote,
@@ -525,7 +624,11 @@ function collectFullFormData() {
     eventType,
     eventDate,
     eventTime,
-    eventVenue,
+    eventVenue: combinedVenue,
+    eventVenue1,
+    venue1Map,
+    eventVenue2: isDualVenue ? eventVenue2 : '',
+    venue2Map: isDualVenue ? venue2Map : '',
     eventNotes,
     generatedAt: new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
   };
@@ -544,7 +647,9 @@ function buildTextSummary(data) {
     `🎉 Event Type: ${data.eventType}`,
     `📅 Event Date & Time: ${data.eventDate} (${data.eventTime})`,
     `📍 Set Coverage: ${data.settingVal} (${data.pkgVal || 'Package A'})`,
-    `🏛️ Venue & Address: ${data.eventVenue} (${data.areaVal})`,
+    `🏛️ Venue 1: ${data.eventVenue1}${data.venue1Map ? ' | Map: ' + data.venue1Map : ''}`,
+    data.eventVenue2 ? `🥂 Venue 2 (Reception): ${data.eventVenue2}${data.venue2Map ? ' | Map: ' + data.venue2Map : ''}` : null,
+    `🗺️ Area: ${data.areaVal}`,
     ``,
     `🎵 REQUESTED SONG SETLIST (${data.songs.length}):`,
     songLines,
@@ -554,10 +659,11 @@ function buildTextSummary(data) {
     ``,
     `💰 QUOTATION SUMMARY:`,
     `  • Base Package: ₱${data.basePrice.toLocaleString()}`,
-    `  • Transport (${data.areaVal}): ${data.isOutside ? 'Subject to venue distance' : '₱' + data.transportCost.toLocaleString()}`,
+    `  • Transport (${data.areaVal}): ${data.isOutside ? 'Varies by venue distance' : '₱' + data.transportCost.toLocaleString()}`,
     data.customSongsCount > 0 ? `  • Custom Song Arrangements (${data.customSongsCount}x): ₱${data.customSongsFee.toLocaleString()}` : null,
-    `  • ESTIMATED TOTAL: ₱${data.totalAmount.toLocaleString()}${data.isOutside ? ' + Travel Fee' : ''}`,
-    `  • 30% RESERVATION DEPOSIT: ₱${data.depositAmount.toLocaleString()}`
+    `  • ESTIMATED TOTAL: ₱${data.totalAmount.toLocaleString()}${data.isOutside ? '+ (Final price varies by location/setup)' : ''}`,
+    `  • 30% RESERVATION DEPOSIT: ₱${data.depositAmount.toLocaleString()}`,
+    `  * Note: Custom quotations and events outside Pampanga may vary in price depending on travel distance, venue logistics, and total sets.*`
   ].filter(Boolean).join('\n');
 }
 
@@ -568,18 +674,16 @@ function exportQuotationAsImage() {
 
   const W = 1200;
   const songCount = Math.max(1, data.songs.length);
-  const H = 880 + (songCount * 58);
+  const H = 940 + (songCount * 58);
   canvas.width = W;
   canvas.height = H;
 
-  // Background
   const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
   bgGrad.addColorStop(0, '#141210');
   bgGrad.addColorStop(1, '#1F1B17');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // Outer Gold Border
   ctx.strokeStyle = '#D9B45A';
   ctx.lineWidth = 4;
   ctx.strokeRect(24, 24, W - 48, H - 48);
@@ -587,20 +691,18 @@ function exportQuotationAsImage() {
   ctx.lineWidth = 1;
   ctx.strokeRect(34, 34, W - 68, H - 68);
 
-  // Header Banner
   ctx.fillStyle = '#D9B45A';
   ctx.font = 'bold 16px sans-serif';
   ctx.fillText('OFFICIAL EVENT QUOTATION & PERFORMANCE SETLIST', 64, 82);
 
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 38px Georgia, serif';
-  ctx.fillText('HAROLD TRINIDAD — LIVE SAXOPHONIST', 64, 128);
+  ctx.font = 'bold 36px Georgia, serif';
+  ctx.fillText('HAROLD TRINIDAD — LIVE SAXOPHONIST', 64, 126);
 
   ctx.fillStyle = '#A8A29E';
-  ctx.font = '17px sans-serif';
-  ctx.fillText('Pampanga & Nationwide | FB: facebook.com/harold.calotrinidad | Email: haroldcalo.trinidad@gmail.com', 64, 158);
+  ctx.font = '16px sans-serif';
+  ctx.fillText('Call/Viber: 0928 798 9977 | FB: facebook.com/harold.calotrinidad | Email: haroldcalo.trinidad@gmail.com', 64, 156);
 
-  // Ref Badge
   ctx.fillStyle = 'rgba(217, 180, 90, 0.16)';
   ctx.fillRect(W - 310, 62, 246, 68);
   ctx.strokeStyle = '#D9B45A';
@@ -612,40 +714,35 @@ function exportQuotationAsImage() {
   ctx.font = '14px sans-serif';
   ctx.fillText('Issued: ' + data.generatedAt, W - 290, 116);
 
-  // Divider
   ctx.strokeStyle = 'rgba(217, 180, 90, 0.35)';
   ctx.beginPath();
-  ctx.moveTo(64, 182);
-  ctx.lineTo(W - 64, 182);
+  ctx.moveTo(64, 180);
+  ctx.lineTo(W - 64, 180);
   ctx.stroke();
 
-  // Client & Event Details Grid
   const drawField = (label, value, x, y, maxW = 500) => {
     ctx.fillStyle = '#D9B45A';
     ctx.font = 'bold 13px sans-serif';
     ctx.fillText(label.toUpperCase(), x, y);
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 19px sans-serif';
-    const clipped = value.length > 48 ? value.slice(0, 45) + '...' : value;
-    ctx.fillText(clipped, x, y + 25, maxW);
+    ctx.font = 'bold 18px sans-serif';
+    const clipped = value.length > 52 ? value.slice(0, 49) + '...' : value;
+    ctx.fillText(clipped, x, y + 24, maxW);
   };
 
-  drawField('Client Name', data.clientName, 64, 218);
-  drawField('Contact / Email', `${data.clientPhone}  |  ${data.clientEmail}`, 600, 218);
+  drawField('Client Name', data.clientName, 64, 214);
+  drawField('Contact / Email', `${data.clientPhone}  |  ${data.clientEmail}`, 600, 214);
+  drawField('Event Type / Occasion', data.eventType, 64, 278);
+  drawField('Event Date & Time', `${data.eventDate}  (${data.eventTime})`, 600, 278);
+  drawField('Selected Set & Coverage', `${data.settingVal}  [${data.pkgVal || 'Package A'}]`, 64, 342);
+  drawField('Venue Location(s)', `${data.eventVenue} (${data.areaVal})`, 600, 342);
 
-  drawField('Event Type / Occasion', data.eventType, 64, 284);
-  drawField('Event Date & Time', `${data.eventDate}  (${data.eventTime})`, 600, 284);
-
-  drawField('Selected Set & Coverage', `${data.settingVal}  [${data.pkgVal || 'Package A'}]`, 64, 350);
-  drawField('Venue Address & Area', `${data.eventVenue} (${data.areaVal})`, 600, 350);
-
-  // Song List Section
-  let curY = 420;
+  let curY = 410;
   ctx.fillStyle = 'rgba(217, 180, 90, 0.14)';
   ctx.fillRect(64, curY, W - 128, 38);
   ctx.fillStyle = '#D9B45A';
   ctx.font = 'bold 15px sans-serif';
-  ctx.fillText(`REQUESTED PERFORMANCE SETLIST (${data.songs.length} SONG${data.songs.length === 1 ? '' : 'S'})`, 80, curY + 25);
+  ctx.fillText(`REQUESTED PERFORMANCE SETLIST TABLE (${data.songs.length} SONG${data.songs.length === 1 ? '' : 'S'})`, 80, curY + 25);
   curY += 58;
 
   if (data.songs.length === 0) {
@@ -680,7 +777,6 @@ function exportQuotationAsImage() {
     });
   }
 
-  // Special Conditions
   curY += 12;
   ctx.fillStyle = '#D9B45A';
   ctx.font = 'bold 14px sans-serif';
@@ -688,38 +784,40 @@ function exportQuotationAsImage() {
   ctx.fillStyle = '#E7E5E4';
   ctx.font = '16px sans-serif';
   const notesClipped = data.eventNotes.length > 115 ? data.eventNotes.slice(0, 112) + '...' : data.eventNotes;
-  ctx.fillText(notesClipped, 64, curY + 26);
+  ctx.fillText(notesClipped, 64, curY + 25);
 
-  // Quotation Box at Bottom
-  curY += 58;
+  curY += 54;
   ctx.fillStyle = '#1C1814';
-  ctx.fillRect(64, curY, W - 128, 195);
+  ctx.fillRect(64, curY, W - 128, 225);
   ctx.strokeStyle = '#D9B45A';
   ctx.lineWidth = 2;
-  ctx.strokeRect(64, curY, W - 128, 195);
+  ctx.strokeRect(64, curY, W - 128, 225);
 
   ctx.fillStyle = '#D9B45A';
   ctx.font = 'bold 16px sans-serif';
-  ctx.fillText('ITEMIZED QUOTATION BREAKDOWN', 92, curY + 36);
+  ctx.fillText('ITEMIZED QUOTATION BREAKDOWN', 92, curY + 34);
 
   ctx.fillStyle = '#D6D3D1';
   ctx.font = '17px sans-serif';
-  ctx.fillText(`Base Package (${data.pkgLabel}):`, 92, curY + 70);
-  ctx.fillText(`₱${data.basePrice.toLocaleString()}`, W - 260, curY + 70);
+  ctx.fillText(`Base Package (${data.pkgLabel}):`, 92, curY + 66);
+  ctx.fillText(`₱${data.basePrice.toLocaleString()}`, W - 260, curY + 66);
 
-  ctx.fillText(`Transport & Logistics (${data.areaVal}):`, 92, curY + 100);
-  ctx.fillText(data.isOutside ? 'Custom Travel Fee' : `₱${data.transportCost.toLocaleString()}`, W - 260, curY + 100);
+  ctx.fillText(`Transport & Logistics (${data.areaVal}):`, 92, curY + 96);
+  ctx.fillText(data.isOutside ? 'Varies by Distance' : `₱${data.transportCost.toLocaleString()}`, W - 260, curY + 96);
 
-  ctx.fillText(`Custom Song Arrangements (${data.customSongsCount} song${data.customSongsCount === 1 ? '' : 's'}):`, 92, curY + 130);
-  ctx.fillText(`₱${data.customSongsFee.toLocaleString()}`, W - 260, curY + 130);
+  ctx.fillText(`Custom Song Arrangements (${data.customSongsCount} song${data.customSongsCount === 1 ? '' : 's'}):`, 92, curY + 126);
+  ctx.fillText(`₱${data.customSongsFee.toLocaleString()}`, W - 260, curY + 126);
 
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 22px sans-serif';
-  ctx.fillText('ESTIMATED TOTAL QUOTATION:', 92, curY + 170);
+  ctx.font = 'bold 21px sans-serif';
+  ctx.fillText('ESTIMATED TOTAL QUOTATION:', 92, curY + 164);
   ctx.fillStyle = '#D9B45A';
-  ctx.fillText(`₱${data.totalAmount.toLocaleString()}${data.isOutside ? ' + Travel' : ''}   |   30% DEPOSIT: ₱${data.depositAmount.toLocaleString()}`, 460, curY + 170);
+  ctx.fillText(`₱${data.totalAmount.toLocaleString()}${data.isOutside ? '+ (Price Varies)' : ''}   |   30% DEPOSIT: ₱${data.depositAmount.toLocaleString()}`, 440, curY + 164);
 
-  // Trigger PNG Download
+  ctx.fillStyle = '#A8A29E';
+  ctx.font = 'italic 13px sans-serif';
+  ctx.fillText('* Note: Final quotation price may vary for events outside Pampanga, multi-venue setups, extra sets, or special technical requirements.', 92, curY + 200);
+
   const safeName = data.clientName.replace(/[^a-z0-9]/gi, '-').replace(/-+/g, '-');
   const link = document.createElement('a');
   link.download = `Harold-Trinidad-Quotation-${safeName || data.refId}.png`;
@@ -749,34 +847,35 @@ function exportQuotationAsPDF() {
   <meta charset="UTF-8">
   <title>Harold Trinidad Quotation - ${data.refId}</title>
   <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; color: #181512; margin: 0; padding: 32px; background: #fff; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #181512; margin: 0; padding: 28px; background: #fff; }
     .sheet { max-width: 820px; margin: 0 auto; border: 2px solid #B08A3E; padding: 28px; border-radius: 8px; }
     .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #B08A3E; padding-bottom: 16px; margin-bottom: 20px; }
     .title { font-family: Georgia, serif; font-size: 26px; font-weight: 700; margin: 4px 0; color: #181512; }
     .badge { background: #181512; color: #D9B45A; padding: 6px 12px; border-radius: 4px; font-weight: 700; font-size: 13px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
     .box { background: #FAF8F5; border: 1px solid #E5E0D8; padding: 10px 14px; border-radius: 6px; }
     .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #8C6D2F; font-weight: 700; }
-    .val { font-size: 15px; font-weight: 600; margin-top: 3px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+    .val { font-size: 14px; font-weight: 600; margin-top: 3px; word-break: break-word; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 13px; }
     th { background: #181512; color: #D9B45A; text-align: left; padding: 9px 10px; font-size: 12px; text-transform: uppercase; }
-    .summary { background: #181512; color: #fff; padding: 18px 22px; border-radius: 8px; margin-top: 16px; }
+    .summary { background: #181512; color: #fff; padding: 18px 22px; border-radius: 8px; margin-top: 14px; }
     .sum-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
     .sum-total { border-top: 1px dashed #D9B45A; margin-top: 8px; padding-top: 10px; font-size: 18px; font-weight: 700; color: #D9B45A; }
+    .vary-note { margin-top: 10px; padding: 8px 12px; background: rgba(217,180,90,0.15); border-left: 3px solid #D9B45A; font-size: 12px; color: #E7E5E4; }
     @media print { .no-print { display: none !important; } body { padding: 0; } }
   </style>
 </head>
 <body>
   <div class="no-print" style="max-width:820px; margin:0 auto 16px; display:flex; justify-content:space-between; align-items:center; background:#FAF6EE; padding:12px 16px; border:1px solid #D9B45A; border-radius:6px;">
-    <strong>Ready to Save as PDF: Choose "Save as PDF" in your printer destination.</strong>
-    <button onclick="window.print()" style="background:#181512; color:#D9B45A; border:none; padding:8px 16px; border-radius:4px; font-weight:700; cursor:pointer;">Print / Save PDF</button>
+    <strong>Save Official Quotation as PDF: Select "Save as PDF" in your print destination.</strong>
+    <button onclick="window.print()" style="background:#181512; color:#D9B45A; border:none; padding:8px 16px; border-radius:4px; font-weight:700; cursor:pointer;">Print / Save Quotation PDF</button>
   </div>
   <div class="sheet">
     <div class="header">
       <div>
-        <div style="font-size:12px; font-weight:700; color:#8C6D2F; letter-spacing:0.08em;">OFFICIAL EVENT QUOTATION &amp; SETLIST</div>
+        <div style="font-size:12px; font-weight:700; color:#8C6D2F; letter-spacing:0.08em;">OFFICIAL EVENT QUOTATION &amp; PERFORMANCE DETAILS</div>
         <div class="title">Harold Trinidad — Live Saxophonist</div>
-        <div style="font-size:13px; color:#57534E;">Pampanga Area &amp; Nationwide | haroldcalo.trinidad@gmail.com | fb.com/harold.calotrinidad</div>
+        <div style="font-size:13px; color:#57534E;">Call / Viber: 0928 798 9977 | haroldcalo.trinidad@gmail.com | fb.com/harold.calotrinidad</div>
       </div>
       <div style="text-align:right;">
         <div class="badge">${data.refId}</div>
@@ -789,8 +888,17 @@ function exportQuotationAsPDF() {
       <div class="box"><div class="label">Contact &amp; Email</div><div class="val">${data.clientPhone} | ${data.clientEmail}</div></div>
       <div class="box"><div class="label">Event Type / Occasion</div><div class="val">${data.eventType}</div></div>
       <div class="box"><div class="label">Event Date &amp; Time</div><div class="val">${data.eventDate} (${data.eventTime})</div></div>
-      <div class="box"><div class="label">Selected Set &amp; Setting</div><div class="val">${data.settingVal} (${data.pkgVal || 'Package A'})</div></div>
-      <div class="box"><div class="label">Venue Location &amp; Address</div><div class="val">${data.eventVenue} (${data.areaVal})</div></div>
+      <div class="box"><div class="label">Selected Set &amp; Coverage</div><div class="val">${data.settingVal} (${data.pkgVal || 'Package A'})</div></div>
+      <div class="box"><div class="label">Coverage Area</div><div class="val">${data.areaVal}</div></div>
+      <div class="box" style="grid-column: span 2;">
+        <div class="label">Venue 1 (Primary / Ceremony Location)</div>
+        <div class="val">${data.eventVenue1} ${data.venue1Map ? `— <a href="${data.venue1Map}">Google Map Link</a>` : ''}</div>
+      </div>
+      ${data.eventVenue2 ? `
+      <div class="box" style="grid-column: span 2;">
+        <div class="label">Venue 2 (Reception / Second Location)</div>
+        <div class="val">${data.eventVenue2} ${data.venue2Map ? `— <a href="${data.venue2Map}">Google Map Link</a>` : ''}</div>
+      </div>` : ''}
     </div>
 
     <h4 style="margin: 16px 0 8px; text-transform: uppercase; font-size: 13px; color: #8C6D2F;">Requested Song Setlist (${data.songs.length})</h4>
@@ -801,17 +909,18 @@ function exportQuotationAsPDF() {
       <tbody>${songsRowsHtml}</tbody>
     </table>
 
-    <div class="box" style="margin-bottom:16px;">
+    <div class="box" style="margin-bottom:14px;">
       <div class="label">Special Conditions &amp; Event Instructions</div>
       <div class="val" style="font-weight:400; font-size:14px;">${data.eventNotes}</div>
     </div>
 
     <div class="summary">
       <div class="sum-row"><span>Base Performance Package (${data.pkgLabel}):</span><strong>₱${data.basePrice.toLocaleString()}</strong></div>
-      <div class="sum-row"><span>Transport &amp; Logistics (${data.areaVal}):</span><strong>${data.isOutside ? 'Custom Travel Quote' : '₱' + data.transportCost.toLocaleString()}</strong></div>
+      <div class="sum-row"><span>Transport &amp; Logistics (${data.areaVal}):</span><strong>${data.isOutside ? 'Varies by Venue Distance' : '₱' + data.transportCost.toLocaleString()}</strong></div>
       <div class="sum-row"><span>Custom Song Arrangements (${data.customSongsCount} × ₱500):</span><strong>₱${data.customSongsFee.toLocaleString()}</strong></div>
-      <div class="sum-row sum-total"><span>ESTIMATED TOTAL QUOTATION:</span><span>₱${data.totalAmount.toLocaleString()}${data.isOutside ? ' + Travel' : ''}</span></div>
+      <div class="sum-row sum-total"><span>ESTIMATED TOTAL QUOTATION:</span><span>₱${data.totalAmount.toLocaleString()}${data.isOutside ? '+ (Price Varies)' : ''}</span></div>
       <div class="sum-row" style="color:#FFF8DC; font-weight:700; margin-top:6px;"><span>30% Required Deposit to Reserve Date:</span><span>₱${data.depositAmount.toLocaleString()}</span></div>
+      <div class="vary-note"><strong>Important Quotation Note:</strong> For Custom Quotations, events outside Pampanga, or multi-venue setups (Church, Reception, Hotel, School, Garden), final pricing will vary depending on exact travel distance, total sets/hours, sound system requirements, and custom song arrangements.</div>
     </div>
   </div>
   <script>setTimeout(() => { window.print(); }, 350);</script>
@@ -823,11 +932,120 @@ function exportQuotationAsPDF() {
     printWin.document.open();
     printWin.document.write(printHtml);
     printWin.document.close();
-    showSiteToast('PDF Quotation Ready!', 'Choose "Save as PDF" in the print dialog to save your quotation.');
+    showSiteToast('Quotation PDF Ready!', 'Select "Save as PDF" in the print window.');
   } else {
-    showSiteToast('Popup Blocked — Downloading Image Instead', 'Your browser blocked the PDF print tab, downloading high-res PNG quotation.');
     exportQuotationAsImage();
   }
+}
+
+function exportSongListAsPDF() {
+  const data = collectFullFormData();
+  const songsRowsHtml = data.songs.length > 0
+    ? data.songs.map((s, i) => `
+        <tr>
+          <td style="padding:10px; border-bottom:1px solid #ddd; font-weight:700;">#${i + 1}</td>
+          <td style="padding:10px; border-bottom:1px solid #ddd; font-weight:600; color:#8C6D2F;">${s.moment}</td>
+          <td style="padding:10px; border-bottom:1px solid #ddd; font-weight:700; font-size:15px;">${s.title}</td>
+          <td style="padding:10px; border-bottom:1px solid #ddd;">${s.artist}</td>
+          <td style="padding:10px; border-bottom:1px solid #ddd; font-size:12px;">${s.ytLink ? `<a href="${s.ytLink}">${s.ytLink}</a>` : 'Standard Repertoire'}</td>
+          <td style="padding:10px; border-bottom:1px solid #ddd;">${s.isCustom ? '+₱500 Custom' : 'Standard'}</td>
+        </tr>`).join('')
+    : `<tr><td colspan="6" style="padding:18px; text-align:center; color:#666;">No songs added yet.</td></tr>`;
+
+  const printHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Harold Trinidad Requested Song List - ${data.clientName}</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #181512; margin: 0; padding: 28px; background: #fff; }
+    .sheet { max-width: 820px; margin: 0 auto; border: 2px solid #B08A3E; padding: 28px; border-radius: 8px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #B08A3E; padding-bottom: 14px; margin-bottom: 18px; }
+    .title { font-family: Georgia, serif; font-size: 24px; font-weight: 700; margin: 4px 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+    th { background: #181512; color: #D9B45A; text-align: left; padding: 10px; font-size: 12px; text-transform: uppercase; }
+    @media print { .no-print { display: none !important; } body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="max-width:820px; margin:0 auto 16px; display:flex; justify-content:space-between; align-items:center; background:#FAF6EE; padding:12px 16px; border:1px solid #D9B45A; border-radius:6px;">
+    <strong>Save Requested Song List as PDF: Select "Save as PDF" in your printer destination.</strong>
+    <button onclick="window.print()" style="background:#181512; color:#D9B45A; border:none; padding:8px 16px; border-radius:4px; font-weight:700; cursor:pointer;">Print / Save Song List PDF</button>
+  </div>
+  <div class="sheet">
+    <div class="header">
+      <div>
+        <div style="font-size:12px; font-weight:700; color:#8C6D2F; letter-spacing:0.08em;">OFFICIAL EVENT PERFORMANCE SETLIST</div>
+        <div class="title">Requested Song List — Harold Trinidad</div>
+        <div style="font-size:13px; color:#57534E;">Client: <strong>${data.clientName}</strong> | Event: <strong>${data.eventType}</strong> | Date: <strong>${data.eventDate}</strong></div>
+        <div style="font-size:13px; color:#57534E; margin-top:2px;">Venue: ${data.eventVenue} (${data.settingVal})</div>
+      </div>
+      <div style="text-align:right; font-size:12px; color:#57534E;">
+        <strong>${data.refId}</strong><br>Total Songs: ${data.songs.length}
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Set / Moment</th><th>Song Title</th><th>Artist</th><th>YouTube Link</th><th>Type</th></tr>
+      </thead>
+      <tbody>${songsRowsHtml}</tbody>
+    </table>
+    <div style="margin-top:18px; font-size:13px; color:#57534E; background:#FAF8F5; padding:12px; border:1px solid #E5E0D8; border-radius:6px;">
+      <strong>Special Conditions / Cues:</strong> ${data.eventNotes}
+    </div>
+  </div>
+  <script>setTimeout(() => { window.print(); }, 350);</script>
+</body>
+</html>`;
+
+  const printWin = window.open('', '_blank');
+  if (printWin) {
+    printWin.document.open();
+    printWin.document.write(printHtml);
+    printWin.document.close();
+    showSiteToast('Song List PDF Ready!', 'Select "Save as PDF" in the print window.');
+  }
+}
+
+function resolveMapSearchQuery(addressVal, mapVal) {
+  const raw = (mapVal || addressVal || '').trim();
+  if (!raw) return '';
+  // Extract coordinates or query if full google maps url is pasted
+  const qMatch = raw.match(/[?&]q=([^&]+)/);
+  if (qMatch) return decodeURIComponent(qMatch[1]);
+  const placeMatch = raw.match(/\/maps\/place\/([^/]+)/);
+  if (placeMatch) return decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+  if (raw.startsWith('http')) {
+    return addressVal.trim() || 'Pampanga, Philippines';
+  }
+  return raw;
+}
+
+function locateOnGoogleMap(venueNum) {
+  const addrInput = document.getElementById(venueNum === 1 ? 'event-venue' : 'event-venue-2');
+  const mapInput = document.getElementById(venueNum === 1 ? 'venue-1-map' : 'venue-2-map');
+  const wrap = document.getElementById(venueNum === 1 ? 'map-preview-1-wrap' : 'map-preview-2-wrap');
+  const iframe = document.getElementById(venueNum === 1 ? 'map-preview-1-iframe' : 'map-preview-2-iframe');
+  const extLink = document.getElementById(venueNum === 1 ? 'open-map-1-link' : 'open-map-2-link');
+
+  const addrVal = addrInput?.value.trim() || '';
+  const mapVal = mapInput?.value.trim() || '';
+  if (!addrVal && !mapVal) {
+    showSiteToast('Enter Venue or Map Link', 'Please type the venue name/address or paste a Google Maps link first.');
+    return;
+  }
+
+  const query = resolveMapSearchQuery(addrVal, mapVal);
+  if (iframe && wrap) {
+    iframe.src = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+    wrap.style.display = 'block';
+  }
+  if (extLink) {
+    extLink.href = mapVal.startsWith('http')
+      ? mapVal
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  }
+  showSiteToast('Location Preview Loaded!', `Showing Google Map for "${query}".`);
 }
 
 function initBookingForm() {
@@ -835,103 +1053,120 @@ function initBookingForm() {
   const submitBtn = document.getElementById('submit-booking-btn');
   const spinner = document.getElementById('submit-spinner');
   const btnText = document.getElementById('submit-btn-text');
-  const songListContainer = document.getElementById('song-rows-list');
-  const addSongBtn = document.getElementById('add-song-row-btn');
+
+  // Song Modal Elements
+  const songModal = document.getElementById('add-song-modal');
+  const openSongModalBtn = document.getElementById('open-song-modal-btn');
+  const closeSongModalBtn = document.getElementById('close-song-modal-btn');
+  const cancelSongModalBtn = document.getElementById('cancel-song-modal-btn');
+  const saveSongModalBtn = document.getElementById('save-song-modal-btn');
+  const clearAllSongsBtn = document.getElementById('clear-all-songs-btn');
+
+  const modalTitleInput = document.getElementById('modal-song-title');
+  const modalArtistInput = document.getElementById('modal-song-artist');
+  const modalYtInput = document.getElementById('modal-song-yt');
+  const modalMomentSelect = document.getElementById('modal-song-moment');
+  const modalArrSelect = document.getElementById('modal-song-arr');
+
+  // Export Buttons
   const exportPdfBtn = document.getElementById('export-pdf-btn');
+  const exportSongsPdfBtn = document.getElementById('export-songs-pdf-btn');
+  const exportSongsPdfTopBtn = document.getElementById('export-songs-pdf-top-btn');
   const exportImgBtn = document.getElementById('export-img-btn');
+
+  // Map Buttons
+  const locateMap1Btn = document.getElementById('locate-map-1-btn');
+  const gpsMap1Btn = document.getElementById('gps-map-1-btn');
+  const locateMap2Btn = document.getElementById('locate-map-2-btn');
 
   if (!form) return;
 
-  function renumberSongRows() {
-    const cards = songListContainer.querySelectorAll('.song-row-card');
-    cards.forEach((card, idx) => {
-      const badge = card.querySelector('.song-row-badge');
-      if (badge) badge.textContent = `Song #${idx + 1}`;
-    });
-    calculateLiveQuotation();
+  // Render initial song table
+  renderRequestedSongsTable();
+
+  function openSongModal() {
+    if (!songModal) return;
+    songModal.classList.add('active');
+    songModal.setAttribute('aria-hidden', 'false');
+    setTimeout(() => modalTitleInput?.focus(), 80);
   }
 
-  function addSongRow(prefill = {}) {
-    if (!songListContainer) return;
-    const count = songListContainer.querySelectorAll('.song-row-card').length + 1;
-    const card = document.createElement('div');
-    card.className = 'song-row-card';
-    card.innerHTML = `
-      <div class="song-row-top">
-        <span class="song-row-badge">Song #${count}</span>
-        <button type="button" class="song-row-remove" aria-label="Remove song">✕ Remove</button>
-      </div>
-      <div class="song-row-grid">
-        <input type="text" class="form-input song-title-input" placeholder="Song Title (e.g. Through The Years)" value="${prefill.title || ''}">
-        <input type="text" class="form-input song-artist-input" placeholder="Artist (e.g. Kenny Rogers)" value="${prefill.artist || ''}">
-        <input type="url" class="form-input song-yt-input" placeholder="YouTube Link (Optional: https://youtu.be/...)" value="${prefill.yt || ''}">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem;">
-          <select class="form-select song-moment-select" aria-label="Event Moment">
-            <option value="Bridal Entrance">Bridal Entrance</option>
-            <option value="Church / Ceremony">Church / Ceremony</option>
-            <option value="Garden / Cocktail">Garden / Cocktail</option>
-            <option value="Couple Entrance">Couple Entrance</option>
-            <option value="First Dance">First Dance</option>
-            <option value="Dinner / Reception" selected>Dinner / Reception</option>
-            <option value="Special Dedication">Special Dedication</option>
-          </select>
-          <select class="form-select song-arr-select" aria-label="Arrangement Type">
-            <option value="standard" selected>Repertoire (Free)</option>
-            <option value="custom">Custom (+₱500)</option>
-          </select>
-        </div>
-      </div>
-    `;
-
-    card.querySelector('.song-row-remove').addEventListener('click', () => {
-      card.remove();
-      renumberSongRows();
-    });
-
-    card.querySelectorAll('input, select').forEach(el => {
-      el.addEventListener('input', calculateLiveQuotation);
-      el.addEventListener('change', calculateLiveQuotation);
-    });
-
-    songListContainer.appendChild(card);
-    calculateLiveQuotation();
+  function closeSongModal() {
+    if (!songModal) return;
+    songModal.classList.remove('active');
+    songModal.setAttribute('aria-hidden', 'true');
   }
 
-  // Initialize with 1 default song row
-  if (songListContainer && songListContainer.children.length === 0) {
-    addSongRow({
-      title: 'Through The Years',
-      artist: 'Kenny Rogers',
-      yt: 'https://youtu.be/ShtHM_xGZwg'
+  if (openSongModalBtn) openSongModalBtn.addEventListener('click', openSongModal);
+  if (closeSongModalBtn) closeSongModalBtn.addEventListener('click', closeSongModal);
+  if (cancelSongModalBtn) cancelSongModalBtn.addEventListener('click', closeSongModal);
+  if (songModal) {
+    songModal.addEventListener('click', (e) => {
+      if (e.target === songModal) closeSongModal();
     });
   }
 
-  if (addSongBtn) {
-    addSongBtn.addEventListener('click', () => addSongRow());
+  if (saveSongModalBtn) {
+    saveSongModalBtn.addEventListener('click', () => {
+      const title = modalTitleInput?.value.trim() || '';
+      const artist = modalArtistInput?.value.trim() || '';
+      const ytLink = modalYtInput?.value.trim() || '';
+      const moment = modalMomentSelect?.value || 'Dinner / Reception';
+      const isCustom = modalArrSelect?.value === 'custom';
+
+      if (!title) {
+        showSiteToast('Missing Song Title', 'Please enter the song title in the modal.');
+        modalTitleInput?.focus();
+        return;
+      }
+
+      requestedSongsState.push({
+        moment,
+        title,
+        artist: artist || 'Original Artist',
+        ytLink,
+        isCustom
+      });
+
+      if (modalTitleInput) modalTitleInput.value = '';
+      if (modalArtistInput) modalArtistInput.value = '';
+      if (modalYtInput) modalYtInput.value = '';
+      if (modalArrSelect) modalArrSelect.value = 'standard';
+
+      renderRequestedSongsTable();
+      closeSongModal();
+      showSiteToast('Song Added to Table!', `Added "${title}" to your requested song list.`);
+    });
   }
 
-  // Quick-Add Song Chips
+  if (clearAllSongsBtn) {
+    clearAllSongsBtn.addEventListener('click', () => {
+      if (requestedSongsState.length === 0) {
+        showSiteToast('List Already Empty', 'There are no songs to clear.');
+        return;
+      }
+      requestedSongsState = [];
+      renderRequestedSongsTable();
+      showSiteToast('Cleared All Songs', 'All songs have been removed from the table.');
+    });
+  }
+
+  // Quick-Add Song Chips -> Add directly to Table
   document.querySelectorAll('.song-chip-btn').forEach(chip => {
     chip.addEventListener('click', () => {
       const title = chip.getAttribute('data-title') || '';
       const artist = chip.getAttribute('data-artist') || '';
-      const yt = chip.getAttribute('data-yt') || '';
+      const ytLink = chip.getAttribute('data-yt') || '';
 
-      // Check if first row is empty
-      const existingCards = songListContainer.querySelectorAll('.song-row-card');
-      if (existingCards.length === 1) {
-        const firstTitle = existingCards[0].querySelector('.song-title-input');
-        if (firstTitle && !firstTitle.value.trim()) {
-          firstTitle.value = title;
-          existingCards[0].querySelector('.song-artist-input').value = artist;
-          existingCards[0].querySelector('.song-yt-input').value = yt;
-          calculateLiveQuotation();
-          showSiteToast(`Added "${title}"`, 'Song added to your event setlist.');
-          return;
-        }
-      }
-      addSongRow({ title, artist, yt });
-      showSiteToast(`Added "${title}"`, 'Song added to your event setlist.');
+      requestedSongsState.push({
+        moment: 'Dinner / Reception',
+        title,
+        artist,
+        ytLink,
+        isCustom: false
+      });
+      renderRequestedSongsTable();
+      showSiteToast(`Added "${title}"`, 'Added directly to your Requested Songs Table.');
     });
   });
 
@@ -951,12 +1186,50 @@ function initBookingForm() {
     });
   });
 
-  if (exportPdfBtn) {
-    exportPdfBtn.addEventListener('click', exportQuotationAsPDF);
+  // Google Maps Handlers
+  if (locateMap1Btn) locateMap1Btn.addEventListener('click', () => locateOnGoogleMap(1));
+  if (locateMap2Btn) locateMap2Btn.addEventListener('click', () => locateOnGoogleMap(2));
+
+  if (gpsMap1Btn) {
+    gpsMap1Btn.addEventListener('click', () => {
+      if (!('geolocation' in navigator)) {
+        showSiteToast('GPS Not Supported', 'Your browser does not support GPS geolocation.');
+        return;
+      }
+      showSiteToast('Locating via GPS...', 'Please allow location access when prompted.');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          const mapInput = document.getElementById('venue-1-map');
+          const addrInput = document.getElementById('event-venue');
+          const gpsUrl = `https://www.google.com/maps?q=${latitude.toFixed(6)},${longitude.toFixed(6)}`;
+          if (mapInput) mapInput.value = gpsUrl;
+          if (addrInput && !addrInput.value.trim()) {
+            addrInput.value = `Pinned GPS Location (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`;
+          }
+          const wrap = document.getElementById('map-preview-1-wrap');
+          const iframe = document.getElementById('map-preview-1-iframe');
+          const extLink = document.getElementById('open-map-1-link');
+          if (iframe && wrap) {
+            iframe.src = `https://www.google.com/maps?q=${latitude},${longitude}&output=embed`;
+            wrap.style.display = 'block';
+          }
+          if (extLink) extLink.href = gpsUrl;
+          showSiteToast('GPS Location Pinned!', 'Your current location is now linked on Google Maps.');
+        },
+        () => {
+          showSiteToast('Could Not Pin GPS', 'Location permission denied or unavailable. Paste a Google Maps link instead.');
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    });
   }
-  if (exportImgBtn) {
-    exportImgBtn.addEventListener('click', exportQuotationAsImage);
-  }
+
+  // Export Buttons
+  if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportQuotationAsPDF);
+  if (exportSongsPdfBtn) exportSongsPdfBtn.addEventListener('click', exportSongListAsPDF);
+  if (exportSongsPdfTopBtn) exportSongsPdfTopBtn.addEventListener('click', exportSongListAsPDF);
+  if (exportImgBtn) exportImgBtn.addEventListener('click', exportQuotationAsImage);
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();

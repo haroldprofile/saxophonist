@@ -915,8 +915,20 @@
             <span class="badge-gold">Book Harold Trinidad</span>
             <h2 style="font-size: 2.25rem; margin-top: 0.5rem;">Reserve Your Date</h2>
             <p style="color: var(--secondary-slate); font-size: 1.05rem;">
-              Fill out the inquiry form to confirm date availability, select Package A or B, and calculate your 30% deposit requirement.
+              Fill out the inquiry form to confirm date availability, select Package A, B, or Custom Quote, build your requested song table, and download your Official Quotation &amp; Setlist in PDF or PNG.
             </p>
+
+            <div class="info-card">
+              <div class="info-icon-wrap">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              </div>
+              <div>
+                <div class="info-label">Direct Call / Viber / SMS</div>
+                <div class="info-value">
+                  <a href="tel:09287989977" class="cfg-target-phone" id="phone-link" style="font-weight: 700; color: var(--accent-gold-hover);">0928 798 9977</a>
+                </div>
+              </div>
+            </div>
 
             <div class="info-card">
               <div class="info-icon-wrap">
@@ -935,7 +947,7 @@
                 <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
               </div>
               <div>
-                <div class="info-label">Facebook Page & Profile</div>
+                <div class="info-label">Facebook Page &amp; Profile</div>
                 <div class="info-value">
                   <a href="https://facebook.com/harold.calotrinidad" target="_blank" rel="noopener noreferrer">facebook.com/harold.calotrinidad</a> (Page: saxcoverph)
                 </div>
@@ -947,7 +959,7 @@
                 <svg class="svg-icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
               </div>
               <div>
-                <div class="info-label">Instagram & TikTok</div>
+                <div class="info-label">Instagram &amp; TikTok</div>
                 <div class="info-value">@harold.c.t (IG) | @haroldtrinidad (TikTok)</div>
               </div>
             </div>
@@ -998,6 +1010,8 @@
                     <option value="Birthday / Debut Celebration">Birthday / Debut (18th)</option>
                     <option value="Wedding Anniversary">Wedding Anniversary</option>
                     <option value="Corporate Gala / Dinner">Corporate Event / Gala</option>
+                    <option value="School / University Event">School / University Event</option>
+                    <option value="Hotel / Resort Special Event">Hotel / Banquet Event</option>
                     <option value="Marriage Proposal / Romantic Surprise">Marriage Proposal / Surprise</option>
                     <option value="Special Private Event">Special Private Event</option>
                   </select>
@@ -1014,49 +1028,118 @@
                 </div>
               </div>
 
-              <!-- STEP 2: SET COVERAGE & VENUE LOCATION -->
-              <div class="form-section-label">2. Set Coverage &amp; Venue Location</div>
+              <!-- STEP 2: SET COVERAGE & MULTI-VENUE GOOGLE MAPS LOCATION -->
+              <div class="form-section-label">2. Set Coverage &amp; Venue Location (with Google Maps)</div>
               <div class="form-grid">
                 <div class="form-group">
                   <label for="package-select" class="form-label">Select Package / Set Duration *</label>
                   <select id="package-select" name="packageSelect" class="form-select" required>
-                    <option value="" disabled selected>Select package choice...</option>
-                    <option value="Package A">Package A — 2 Sets / 2 Hours (₱8,500 | Deposit: ₱2,550)</option>
+                    <option value="" disabled>Select package choice...</option>
+                    <option value="Package A" selected>Package A — 2 Sets / 2 Hours (₱8,500 | Deposit: ₱2,550)</option>
                     <option value="Package B">Package B — 1 Set / 1 Hour (₱5,500 | Deposit: ₱1,650)</option>
-                    <option value="Custom Outside Pampanga">Special Event / Multi-Set / Outside Pampanga Quote</option>
+                    <option value="Custom Outside Pampanga">Custom Quotation (Outside Pampanga / Multi-Set / Special Event)</option>
                   </select>
                 </div>
 
                 <div class="form-group">
-                  <label for="venue-setting" class="form-label">Which Set / Venue Setting? *</label>
+                  <label for="venue-setting" class="form-label">Which Set / Venue Setup? *</label>
                   <select id="venue-setting" name="venueSetting" class="form-select" required>
-                    <option value="Church & Reception (2 Sets)">Church Ceremony + Reception (2 Sets)</option>
-                    <option value="Church Ceremony Only (1 Set)">Church Ceremony Only (1 Set)</option>
-                    <option value="Reception / Banquet Only (1 Set)">Reception / Banquet Hall Only (1 Set)</option>
-                    <option value="Garden Ceremony Only (1 Set)">Garden / Outdoor Ceremony Only (1 Set)</option>
-                    <option value="Garden Ceremony + Reception (2 Sets)">Garden Ceremony + Reception (2 Sets)</option>
-                    <option value="Private Villa / Hotel / Custom Set">Private Villa / Hotel / Special Set</option>
+                    <optgroup label="2 Sets / Dual Venue Setup">
+                      <option value="Church & Reception (2 Sets)" selected>Church Ceremony + Reception (2 Sets)</option>
+                      <option value="Garden Ceremony + Reception (2 Sets)">Garden Ceremony + Reception (2 Sets)</option>
+                      <option value="Church + Hotel Ballroom (2 Sets)">Church + Hotel Ballroom (2 Sets)</option>
+                      <option value="School / Campus + Reception (2 Sets)">School / Campus + Reception (2 Sets)</option>
+                    </optgroup>
+                    <optgroup label="1 Set / Single Location Setup">
+                      <option value="Church Ceremony Only (1 Set)">Church Ceremony Only (1 Set)</option>
+                      <option value="Reception / Banquet Only (1 Set)">Reception / Banquet Hall Only (1 Set)</option>
+                      <option value="Garden / Outdoor Only (1 Set)">Garden / Outdoor Ceremony Only (1 Set)</option>
+                      <option value="Hotel / Ballroom Only (1 Set)">Hotel / Ballroom Only (1 Set)</option>
+                      <option value="School / University Only (1 Set)">School / University Campus Only (1 Set)</option>
+                      <option value="Private Villa / Resort / Custom Set">Private Villa / Resort / Custom Venue</option>
+                    </optgroup>
                   </select>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group form-group-full">
                   <label for="location-area" class="form-label">Event Coverage Area *</label>
                   <select id="location-area" name="locationArea" class="form-select" required>
                     <option value="Within Pampanga" selected>Within Pampanga (+₱500 Fixed Transport)</option>
-                    <option value="Outside Pampanga">Outside Pampanga (Manila / Clark / Subic / Tagaytay / Bulacan)</option>
+                    <option value="Outside Pampanga">Outside Pampanga (Metro Manila / Clark / Subic / Tagaytay / Bulacan — Price Varies by Distance)</option>
                   </select>
                 </div>
 
-                <div class="form-group">
-                  <label for="event-venue" class="form-label">Exact Venue Name &amp; Full Address *</label>
-                  <input type="text" id="event-venue" name="venue" class="form-input" placeholder="e.g. San Guillermo Parish &amp; Oasis Hotel, Angeles City, Pampanga" required>
+                <!-- VENUE 1: CEREMONY / PRIMARY VENUE + GOOGLE MAPS -->
+                <div class="venue-map-block form-group-full">
+                  <div class="venue-block-title" id="venue-1-heading">📍 Venue 1: Ceremony / Primary Venue (Church, Garden, School, or Hotel)</div>
+                  <div class="form-grid" style="margin-top: 0.5rem;">
+                    <div class="form-group">
+                      <label for="event-venue" class="form-label" id="venue-1-label">Venue 1 Name &amp; Full Address *</label>
+                      <input type="text" id="event-venue" name="venue" class="form-input" placeholder="e.g. San Guillermo Parish Church, Bacolor, Pampanga" required>
+                    </div>
+                    <div class="form-group">
+                      <label for="venue-1-map" class="form-label">Paste Google Maps Link or Search Location</label>
+                      <input type="text" id="venue-1-map" name="venue1Map" class="form-input" placeholder="Paste https://maps.app.goo.gl/... or type place name">
+                    </div>
+                  </div>
+                  <div class="map-action-bar">
+                    <button type="button" class="btn btn-secondary map-action-btn" id="locate-map-1-btn">
+                      🔍 Locate &amp; Preview on Google Map
+                    </button>
+                    <button type="button" class="btn btn-secondary map-action-btn" id="gps-map-1-btn">
+                      📍 Pin My Current GPS Location
+                    </button>
+                    <a href="https://www.google.com/maps" target="_blank" rel="noopener" class="map-open-external" id="open-map-1-link">Open Google Maps ↗</a>
+                  </div>
+                  <div id="map-preview-1-wrap" class="map-preview-wrap" style="display: none;">
+                    <iframe id="map-preview-1-iframe" title="Venue 1 Google Maps Preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                  </div>
+                </div>
+
+                <!-- VENUE 2: RECEPTION / SECOND VENUE (Shown when 2-Venue Setup selected) -->
+                <div class="venue-map-block form-group-full" id="venue-2-block">
+                  <div class="venue-block-title">🥂 Venue 2: Reception / Second Location (Hotel, Banquet Hall, Garden, etc.)</div>
+                  <div class="form-grid" style="margin-top: 0.5rem;">
+                    <div class="form-group">
+                      <label for="event-venue-2" class="form-label">Reception / Venue 2 Name &amp; Address</label>
+                      <input type="text" id="event-venue-2" name="venue2" class="form-input" placeholder="e.g. Royce Hotel &amp; Casino, Clark Freeport, Pampanga">
+                    </div>
+                    <div class="form-group">
+                      <label for="venue-2-map" class="form-label">Paste Google Maps Link (Reception)</label>
+                      <input type="text" id="venue-2-map" name="venue2Map" class="form-input" placeholder="Paste https://maps.app.goo.gl/... or type reception venue">
+                    </div>
+                  </div>
+                  <div class="map-action-bar">
+                    <button type="button" class="btn btn-secondary map-action-btn" id="locate-map-2-btn">
+                      🔍 Locate Reception on Google Map
+                    </button>
+                    <a href="https://www.google.com/maps" target="_blank" rel="noopener" class="map-open-external" id="open-map-2-link">Open Google Maps ↗</a>
+                  </div>
+                  <div id="map-preview-2-wrap" class="map-preview-wrap" style="display: none;">
+                    <iframe id="map-preview-2-iframe" title="Venue 2 Google Maps Preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                  </div>
                 </div>
               </div>
 
-              <!-- STEP 3: MULTI-SONG SETLIST BUILDER -->
-              <div class="form-section-label" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                <span>3. Requested Song List (Title, Artist &amp; YouTube Link)</span>
-                <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 500;">Tap a popular song or add your own</span>
+              <!-- STEP 3: MODAL-BASED SONG REQUEST BUILDER & TABLE -->
+              <div class="form-section-label" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem;">
+                <span>3. Requested Song List (<span id="song-count-badge">1</span> Song)</span>
+                <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 500;">Add via Modal or 1-tap popular songs</span>
+              </div>
+
+              <div class="song-toolbar">
+                <button type="button" id="open-song-modal-btn" class="btn btn-primary song-modal-trigger-btn">
+                  <svg class="svg-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  <span>+ Add Song (Open Song Modal)</span>
+                </button>
+                <div class="song-toolbar-right">
+                  <button type="button" id="export-songs-pdf-top-btn" class="btn btn-secondary btn-sm-action">
+                    📄 Download Song List PDF
+                  </button>
+                  <button type="button" id="clear-all-songs-btn" class="btn btn-danger-outline btn-sm-action">
+                    🗑️ Clear All Songs
+                  </button>
+                </div>
               </div>
 
               <div class="quick-song-chips" id="quick-song-chips">
@@ -1068,12 +1151,22 @@
                 <button type="button" class="song-chip-btn" data-title="Kahit Maputi Na Ang Buhok Ko" data-artist="Rey Valera" data-yt="https://youtu.be/eb_rV2A0s-8">+ Kahit Maputi Na Ang Buhok Ko</button>
               </div>
 
-              <div id="song-rows-list" class="song-rows-list"></div>
-
-              <button type="button" id="add-song-row-btn" class="btn btn-secondary add-song-btn">
-                <svg class="svg-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                <span>Add Another Song to Setlist</span>
-              </button>
+              <div class="song-table-wrapper">
+                <table class="song-list-table" id="song-list-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 42px;">#</th>
+                      <th>Set / Moment</th>
+                      <th>Song Title</th>
+                      <th>Artist</th>
+                      <th>YouTube Link</th>
+                      <th>Type</th>
+                      <th style="width: 68px; text-align: center;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="song-table-body"></tbody>
+                </table>
+              </div>
 
               <!-- STEP 4: SPECIAL CONDITIONS & NOTES -->
               <div class="form-section-label" style="margin-top: 1.5rem;">4. Special Conditions &amp; Event Instructions</div>
@@ -1088,7 +1181,7 @@
                 <textarea id="event-notes" name="notes" class="form-textarea" placeholder="Specify any special conditions, attire motif, sound check schedule, entrance cues, or special instructions..."></textarea>
               </div>
 
-              <!-- STEP 5: LIVE ITEMIZED QUOTATION BREAKDOWN -->
+              <!-- STEP 5: LIVE ITEMIZED QUOTATION BREAKDOWN + CUSTOM PRICE DISCLAIMER -->
               <div id="deposit-summary-box" class="quotation-preview-card">
                 <div class="quotation-preview-top">
                   <div>
@@ -1120,13 +1213,21 @@
                     <strong id="summary-deposit-cost">₱2,550</strong>
                   </div>
                 </div>
+
+                <div class="quotation-vary-note" id="quotation-vary-note">
+                  <strong>📌 Important Quotation Note:</strong> For Custom Quotations, events outside Pampanga, or multi-venue setups (Church, Reception, Hotel, School, Garden), <strong>final pricing will vary</strong> depending on exact travel distance, total sets/hours, sound system requirements, and custom song arrangements.
+                </div>
               </div>
 
-              <!-- STEP 6: EXPORT TO PDF / IMAGE & SUBMIT -->
-              <div class="quote-export-actions">
+              <!-- STEP 6: EXPORT QUOTATION PDF, SONG LIST PDF, OR PNG IMAGE & SUBMIT -->
+              <div class="quote-export-actions quote-export-actions-3">
                 <button type="button" class="btn btn-secondary quote-export-btn" id="export-pdf-btn">
                   <svg class="svg-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                  <span>Save Form as PDF</span>
+                  <span>Download Quotation PDF</span>
+                </button>
+                <button type="button" class="btn btn-secondary quote-export-btn" id="export-songs-pdf-btn">
+                  <svg class="svg-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                  <span>Download Song List PDF</span>
                 </button>
                 <button type="button" class="btn btn-secondary quote-export-btn" id="export-img-btn">
                   <svg class="svg-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
@@ -1150,6 +1251,66 @@
         </div>
       </div>
     </section>
+
+    <!-- ==========================================
+         ADD SONG TO SETLIST MODAL
+         ========================================== -->
+    <div class="song-modal-backdrop" id="add-song-modal" aria-hidden="true" role="dialog" aria-labelledby="song-modal-title">
+      <div class="song-modal-card">
+        <div class="song-modal-header">
+          <div>
+            <span class="badge-gold" style="margin-bottom: 0.25rem;">Build Your Setlist</span>
+            <h3 id="song-modal-title" style="margin: 0; font-size: 1.35rem; color: #FFFFFF;">Add Requested Song</h3>
+          </div>
+          <button type="button" class="song-modal-close" id="close-song-modal-btn" aria-label="Close modal">✕</button>
+        </div>
+
+        <div class="song-modal-body">
+          <div class="form-group">
+            <label for="modal-song-title" class="form-label" style="color: #E7E5E4;">Song Title *</label>
+            <input type="text" id="modal-song-title" class="form-input" placeholder="e.g. Through The Years">
+          </div>
+
+          <div class="form-group">
+            <label for="modal-song-artist" class="form-label" style="color: #E7E5E4;">Artist / Version *</label>
+            <input type="text" id="modal-song-artist" class="form-input" placeholder="e.g. Kenny Rogers">
+          </div>
+
+          <div class="form-group">
+            <label for="modal-song-yt" class="form-label" style="color: #E7E5E4;">YouTube Reference Link (Optional)</label>
+            <input type="url" id="modal-song-yt" class="form-input" placeholder="https://youtu.be/... or https://youtube.com/watch?v=...">
+          </div>
+
+          <div class="form-grid" style="gap: 0.75rem;">
+            <div class="form-group">
+              <label for="modal-song-moment" class="form-label" style="color: #E7E5E4;">Which Set / Moment?</label>
+              <select id="modal-song-moment" class="form-select">
+                <option value="Bridal Entrance">Bridal Entrance / Processional</option>
+                <option value="Church / Ceremony">Church / Ceremony Set</option>
+                <option value="Garden / Cocktail">Garden / Cocktail Hour</option>
+                <option value="Couple Entrance">Couple Grand Entrance</option>
+                <option value="First Dance">Couple First Dance</option>
+                <option value="Dinner / Reception" selected>Dinner / Reception Set</option>
+                <option value="Special Dedication">Special Event Dedication</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="modal-song-arr" class="form-label" style="color: #E7E5E4;">Arrangement Type</label>
+              <select id="modal-song-arr" class="form-select">
+                <option value="standard" selected>Standard Repertoire (Free)</option>
+                <option value="custom">New Custom Arrangement (+₱500)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="song-modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-song-modal-btn">Cancel</button>
+          <button type="button" class="btn btn-primary" id="save-song-modal-btn">+ Add Song to Table</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <!-- Toast Notification Alert -->
@@ -1235,9 +1396,9 @@
 
   <!-- Persistent Mobile Sticky CTA Bar (<768px) -->
   <div id="mobile-sticky-bar" class="mobile-sticky-cta-bar">
-    <a href="tel:+639170000000" class="btn btn-secondary mobile-sticky-btn cfg-target-phone-link" aria-label="Call Saxophonist Harold Trinidad">
+    <a href="tel:09287989977" class="btn btn-secondary mobile-sticky-btn cfg-target-phone-link" aria-label="Call Saxophonist Harold Trinidad">
       <svg class="svg-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-      <span>Call Direct</span>
+      <span class="cfg-target-call-label">Call 0928 798 9977</span>
     </a>
     <a href="#contact" class="btn btn-primary mobile-sticky-btn">
       <svg class="svg-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>

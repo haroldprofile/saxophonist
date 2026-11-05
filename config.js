@@ -9,7 +9,7 @@ window.SITE_CONFIG = {
     name: "Harold Trinidad",
     tagline: "Elegant Live Saxophone Music for Weddings, Corporate Galas, and Private Celebrations",
     email: "haroldcalo.trinidad@gmail.com",
-    phone: "+63 (917) 000-0000",
+    phone: "0928 798 9977",
     location: "Pampanga Area (Available Nationwide)",
     profilePhoto: "profile/harold-soprano.jpg",
     tiktokEmbedUrl: "https://www.tiktok.com/embed/v2/7617274994745199890",
