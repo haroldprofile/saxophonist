@@ -1250,14 +1250,49 @@ function initBookingForm() {
       await navigator.clipboard.writeText(summaryText);
     } catch (_) {}
 
+    // Send automatic email notification via EmailJS if configured
+    const sec = config.adminSecurity || {};
+    const emailjsKey = sec.emailjsPublicKey || "1fzy7njkATDe4UUfw";
+    const serviceId = sec.emailjsServiceId || "service_tpm1twd";
+    const bookingTemplateId = sec.emailjsBookingTemplateId || "template_booking";
+
+    if (window.emailjs && emailjsKey && serviceId && bookingTemplateId) {
+      try {
+        emailjs.init(emailjsKey);
+        const songLines = data.songs.length > 0
+          ? data.songs.map((s, i) => `${i + 1}. [${s.moment}] "${s.title}" by ${s.artist}${s.ytLink ? ' (' + s.ytLink + ')' : ''}${s.isCustom ? ' [+₱500 Custom]' : ''}`).join('\n')
+          : 'None specified yet (Standard repertoire)';
+
+        await emailjs.send(serviceId, bookingTemplateId, {
+          client_name: data.clientName,
+          client_phone: data.clientPhone,
+          client_email: data.clientEmail,
+          event_type: data.eventType,
+          event_date: data.eventDate,
+          event_time: data.eventTime,
+          set_coverage: `${data.settingVal} (${data.pkgVal || 'Package A'})`,
+          event_venue: data.eventVenue,
+          coverage_area: data.areaVal,
+          total_quotation: `₱${data.totalAmount.toLocaleString()}${data.isOutside ? ' + Travel' : ''}`,
+          deposit_amount: `₱${data.depositAmount.toLocaleString()}`,
+          song_list: songLines,
+          special_notes: data.eventNotes,
+          quote_ref: data.refId,
+          to_email: sec.adminEmail || "haroldcalo.trinidad@gmail.com"
+        });
+      } catch (emailErr) {
+        console.warn('EmailJS booking notice could not send (check template ID):', emailErr);
+      }
+    }
+
     setTimeout(() => {
       if (submitBtn) submitBtn.disabled = false;
       if (spinner) spinner.style.display = 'none';
       if (btnText) btnText.textContent = 'Submit Quotation & Send Setlist to Harold';
 
       showSiteToast(
-        'Quotation & Setlist Copied!',
-        'Opening Messenger — paste your complete setlist & quotation to confirm your date.'
+        'Quotation & Setlist Sent!',
+        'Inquiry sent to Harold\'s email & copied to clipboard! Opening Messenger...'
       );
 
       window.open(`https://m.me/harold.calotrinidad?text=${encodeURIComponent(summaryText)}`, '_blank', 'noopener');

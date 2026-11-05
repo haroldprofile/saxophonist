@@ -22,7 +22,8 @@ window.SITE_CONFIG = {
     "otpExpirationMinutes": 5,
     "emailjsPublicKey": "1fzy7njkATDe4UUfw",
     "emailjsServiceId": "service_tpm1twd",
-    "emailjsTemplateId": "template_jqqvg4u"
+    "emailjsTemplateId": "template_jqqvg4u",
+    "emailjsBookingTemplateId": "template_booking"
   },
   "rates": {
     "specialCover": 1000,
