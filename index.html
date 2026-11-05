@@ -1119,6 +1119,20 @@
                     <iframe id="map-preview-2-iframe" title="Venue 2 Google Maps Preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
                   </div>
                 </div>
+
+                <!-- LIVE GOOGLE MAPS LINK & DRIVING DISTANCE / FUEL COMPUTATION -->
+                <div id="venue-distance-summary" class="venue-map-block form-group-full" style="display: none; background: #181512; color: #FFFFFF; border-color: var(--accent-gold);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.55rem;">
+                    <span style="font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-gold);">
+                      🚗 Driving Distance &amp; Fuel Estimate (From Harold's Home Base)
+                    </span>
+                    <span id="distance-km-badge" style="background: rgba(217,180,90,0.2); color: var(--accent-gold); border: 1px solid rgba(217,180,90,0.45); padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.78rem; font-weight: 700;">
+                      0 km
+                    </span>
+                  </div>
+                  <div id="distance-formula-text" style="font-size: 0.86rem; color: #E7E5E4; line-height: 1.5; margin-bottom: 0.6rem;"></div>
+                  <div id="generated-map-links" style="display: flex; flex-wrap: wrap; gap: 0.65rem; font-size: 0.82rem;"></div>
+                </div>
               </div>
 
               <!-- STEP 3: MODAL-BASED SONG REQUEST BUILDER & TABLE -->

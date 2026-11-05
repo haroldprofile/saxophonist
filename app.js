@@ -172,6 +172,75 @@ let requestedSongsState = [
   }
 ];
 
+let venueDistanceState = {
+  v1: null, // { lat, lng, label, mapUrl }
+  v2: null, // { lat, lng, label, mapUrl }
+  oneWayKm: 0,
+  roundTripKm: 0,
+  litersNeeded: 0,
+  rawFuelCost: 0,
+  computedTransportFee: 0,
+  gasPrice: 62,
+  fuelEff: 10,
+  directionsUrl: ''
+};
+
+function normalizeSongToken(str) {
+  return (str || '')
+    .toLowerCase()
+    .replace(/\([^)]*\)|\[[^\]]*\]/g, ' ')
+    .replace(/\b(sax|saxophone|instrumental|cover|version|live|official|audio|video|lyrics|karaoke|ost|theme|remix|acoustic|remastered)\b/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/^\s*(the|a|an)\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function songSimilarity(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const lenA = a.length;
+  const lenB = b.length;
+  const dp = Array.from({ length: lenA + 1 }, () => new Array(lenB + 1).fill(0));
+  for (let i = 0; i <= lenA; i++) dp[i][0] = i;
+  for (let j = 0; j <= lenB; j++) dp[0][j] = j;
+  for (let i = 1; i <= lenA; i++) {
+    for (let j = 1; j <= lenB; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return 1 - dp[lenA][lenB] / Math.max(lenA, lenB);
+}
+
+function findDuplicateSong(newTitle, newArtist, newYtLink = '') {
+  const normTitle = normalizeSongToken(newTitle);
+  const normArtist = normalizeSongToken(newArtist);
+  const cleanYt = (newYtLink || '').trim().toLowerCase();
+
+  for (const existing of requestedSongsState) {
+    const exTitle = normalizeSongToken(existing.title);
+    const exArtist = normalizeSongToken(existing.artist);
+    const exYt = (existing.ytLink || '').trim().toLowerCase();
+
+    if (cleanYt && exYt && cleanYt === exYt) return existing;
+    if (!normTitle || !exTitle) continue;
+    if (normTitle === exTitle) return existing;
+
+    const titleSim = songSimilarity(normTitle, exTitle);
+    if (titleSim >= 0.84) return existing;
+
+    const minLen = Math.min(normTitle.length, exTitle.length);
+    if (minLen >= 5 && (normTitle.includes(exTitle) || exTitle.includes(normTitle))) {
+      const artistGeneric = !normArtist || !exArtist || normArtist === 'original artist' || exArtist === 'original artist';
+      if (artistGeneric || normArtist === exArtist || songSimilarity(normArtist, exArtist) >= 0.75) {
+        return existing;
+      }
+    }
+  }
+  return null;
+}
+
 function showSiteToast(title, message) {
   const toast = document.getElementById('toast-notification');
   const tTitle = document.getElementById('toast-title');
@@ -313,8 +382,11 @@ function calculateLiveQuotation() {
     pkgLabel = `Custom Quotation — ${settingVal}`;
   }
 
+  const hasCalculatedDistance = venueDistanceState.roundTripKm > 0;
   const isOutside = areaVal === 'Outside Pampanga' || isCustomQuote;
-  const transportCost = isOutside ? 0 : transFee;
+  const transportCost = hasCalculatedDistance
+    ? Math.max(transFee, venueDistanceState.computedTransportFee)
+    : (isOutside ? 0 : transFee);
   const totalAmount = basePrice + transportCost + customSongsFee;
   const depositAmount = Math.round(totalAmount * (depPct / 100));
 
@@ -331,10 +403,24 @@ function calculateLiveQuotation() {
   const depositCostEl = document.getElementById('summary-deposit-cost');
 
   if (pkgTitleEl) pkgTitleEl.textContent = pkgLabel;
-  if (areaBadgeEl) areaBadgeEl.textContent = isOutside ? 'Custom / Price Varies' : 'Pampanga Rate';
-  if (areaLabelEl) areaLabelEl.textContent = areaVal;
+  if (areaBadgeEl) {
+    areaBadgeEl.textContent = hasCalculatedDistance
+      ? `${venueDistanceState.roundTripKm.toFixed(1)} km Round-Trip`
+      : (isOutside ? 'Custom / Price Varies' : 'Pampanga Rate');
+  }
+  if (areaLabelEl) {
+    areaLabelEl.textContent = hasCalculatedDistance
+      ? `${areaVal} (${venueDistanceState.roundTripKm.toFixed(1)} km RT)`
+      : areaVal;
+  }
   if (baseCostEl) baseCostEl.textContent = isCustomQuote ? `₱${basePrice.toLocaleString()} (Starting Base — Varies)` : `₱${basePrice.toLocaleString()}`;
-  if (transCostEl) transCostEl.textContent = isOutside ? 'Varies by Venue Distance' : `₱${transportCost.toLocaleString()}`;
+  if (transCostEl) {
+    if (hasCalculatedDistance) {
+      transCostEl.textContent = `₱${transportCost.toLocaleString()} (${venueDistanceState.roundTripKm.toFixed(1)} km @ ₱${venueDistanceState.gasPrice}/L)`;
+    } else {
+      transCostEl.textContent = isOutside ? 'Locate Venue on Map to Compute' : `₱${transportCost.toLocaleString()}`;
+    }
+  }
 
   if (customRowEl) {
     customRowEl.style.display = customSongsCount > 0 ? 'flex' : 'none';
@@ -343,12 +429,12 @@ function calculateLiveQuotation() {
   }
 
   if (totalCostEl) {
-    totalCostEl.textContent = isOutside
+    totalCostEl.textContent = (isOutside && !hasCalculatedDistance)
       ? `₱${totalAmount.toLocaleString()}+ (Price Varies by Location/Setup)`
       : `₱${totalAmount.toLocaleString()}`;
   }
   if (depositCostEl) {
-    depositCostEl.textContent = isOutside
+    depositCostEl.textContent = (isOutside && !hasCalculatedDistance)
       ? `₱${depositAmount.toLocaleString()}+ (${depPct}% of Final Agreed Quote)`
       : `₱${depositAmount.toLocaleString()} (${depPct}% Downpayment)`;
   }
@@ -361,6 +447,13 @@ function calculateLiveQuotation() {
     areaVal,
     isOutside,
     isCustomQuote,
+    hasCalculatedDistance,
+    roundTripKm: venueDistanceState.roundTripKm,
+    oneWayKm: venueDistanceState.oneWayKm,
+    litersNeeded: venueDistanceState.litersNeeded,
+    gasPrice: venueDistanceState.gasPrice,
+    fuelEff: venueDistanceState.fuelEff,
+    directionsUrl: venueDistanceState.directionsUrl,
     basePrice,
     transportCost,
     customSongsCount,
@@ -388,7 +481,11 @@ function initDepositCalculator() {
         venueSetting.value = 'Church Ceremony Only (1 Set)';
       }
       updateVenueBlocksUI();
-      calculateLiveQuotation();
+      if (venueDistanceState.v1 || venueDistanceState.v2) {
+        updateDrivingDistanceAndFuel();
+      } else {
+        calculateLiveQuotation();
+      }
     });
   }
 
@@ -400,7 +497,11 @@ function initDepositCalculator() {
         pkgSelect.value = 'Package B';
       }
       updateVenueBlocksUI();
-      calculateLiveQuotation();
+      if (venueDistanceState.v1 || venueDistanceState.v2) {
+        updateDrivingDistanceAndFuel();
+      } else {
+        calculateLiveQuotation();
+      }
     });
   }
 
@@ -647,8 +748,10 @@ function buildTextSummary(data) {
     `🎉 Event Type: ${data.eventType}`,
     `📅 Event Date & Time: ${data.eventDate} (${data.eventTime})`,
     `📍 Set Coverage: ${data.settingVal} (${data.pkgVal || 'Package A'})`,
-    `🏛️ Venue 1: ${data.eventVenue1}${data.venue1Map ? ' | Map: ' + data.venue1Map : ''}`,
-    data.eventVenue2 ? `🥂 Venue 2 (Reception): ${data.eventVenue2}${data.venue2Map ? ' | Map: ' + data.venue2Map : ''}` : null,
+    `🏛️ Venue 1: ${data.eventVenue1}${data.venue1Map ? ' | Google Map: ' + data.venue1Map : ''}`,
+    data.eventVenue2 ? `🥂 Venue 2 (Reception): ${data.eventVenue2}${data.venue2Map ? ' | Google Map: ' + data.venue2Map : ''}` : null,
+    data.hasCalculatedDistance ? `🚗 Distance from Home Base: ${data.oneWayKm.toFixed(1)} km one-way (${data.roundTripKm.toFixed(1)} km round-trip | ~${data.litersNeeded.toFixed(1)}L @ ₱${data.gasPrice}/L, ${data.fuelEff} km/L)` : null,
+    data.directionsUrl ? `🧭 Route Directions: ${data.directionsUrl}` : null,
     `🗺️ Area: ${data.areaVal}`,
     ``,
     `🎵 REQUESTED SONG SETLIST (${data.songs.length}):`,
@@ -659,7 +762,7 @@ function buildTextSummary(data) {
     ``,
     `💰 QUOTATION SUMMARY:`,
     `  • Base Package: ₱${data.basePrice.toLocaleString()}`,
-    `  • Transport (${data.areaVal}): ${data.isOutside ? 'Varies by venue distance' : '₱' + data.transportCost.toLocaleString()}`,
+    `  • Transport (${data.hasCalculatedDistance ? data.roundTripKm.toFixed(1) + ' km Round-Trip' : data.areaVal}): ${(data.isOutside && !data.hasCalculatedDistance) ? 'Varies by venue distance' : '₱' + data.transportCost.toLocaleString()}`,
     data.customSongsCount > 0 ? `  • Custom Song Arrangements (${data.customSongsCount}x): ₱${data.customSongsFee.toLocaleString()}` : null,
     `  • ESTIMATED TOTAL: ₱${data.totalAmount.toLocaleString()}${data.isOutside ? '+ (Final price varies by location/setup)' : ''}`,
     `  • 30% RESERVATION DEPOSIT: ₱${data.depositAmount.toLocaleString()}`,
@@ -802,8 +905,8 @@ function exportQuotationAsImage() {
   ctx.fillText(`Base Package (${data.pkgLabel}):`, 92, curY + 66);
   ctx.fillText(`₱${data.basePrice.toLocaleString()}`, W - 260, curY + 66);
 
-  ctx.fillText(`Transport & Logistics (${data.areaVal}):`, 92, curY + 96);
-  ctx.fillText(data.isOutside ? 'Varies by Distance' : `₱${data.transportCost.toLocaleString()}`, W - 260, curY + 96);
+  ctx.fillText(`Transport & Logistics (${data.hasCalculatedDistance ? data.roundTripKm.toFixed(1) + ' km RT @ ₱' + data.gasPrice + '/L' : data.areaVal}):`, 92, curY + 96);
+  ctx.fillText((data.isOutside && !data.hasCalculatedDistance) ? 'Varies by Distance' : `₱${data.transportCost.toLocaleString()}`, W - 260, curY + 96);
 
   ctx.fillText(`Custom Song Arrangements (${data.customSongsCount} song${data.customSongsCount === 1 ? '' : 's'}):`, 92, curY + 126);
   ctx.fillText(`₱${data.customSongsFee.toLocaleString()}`, W - 260, curY + 126);
@@ -812,7 +915,7 @@ function exportQuotationAsImage() {
   ctx.font = 'bold 21px sans-serif';
   ctx.fillText('ESTIMATED TOTAL QUOTATION:', 92, curY + 164);
   ctx.fillStyle = '#D9B45A';
-  ctx.fillText(`₱${data.totalAmount.toLocaleString()}${data.isOutside ? '+ (Price Varies)' : ''}   |   30% DEPOSIT: ₱${data.depositAmount.toLocaleString()}`, 440, curY + 164);
+  ctx.fillText(`₱${data.totalAmount.toLocaleString()}${(data.isOutside && !data.hasCalculatedDistance) ? '+ (Price Varies)' : ''}   |   30% DEPOSIT: ₱${data.depositAmount.toLocaleString()}`, 440, curY + 164);
 
   ctx.fillStyle = '#A8A29E';
   ctx.font = 'italic 13px sans-serif';
@@ -892,12 +995,17 @@ function exportQuotationAsPDF() {
       <div class="box"><div class="label">Coverage Area</div><div class="val">${data.areaVal}</div></div>
       <div class="box" style="grid-column: span 2;">
         <div class="label">Venue 1 (Primary / Ceremony Location)</div>
-        <div class="val">${data.eventVenue1} ${data.venue1Map ? `— <a href="${data.venue1Map}">Google Map Link</a>` : ''}</div>
+        <div class="val">${data.eventVenue1} ${data.venue1Map ? `— <a href="${data.venue1Map}">${data.venue1Map}</a>` : ''}</div>
       </div>
       ${data.eventVenue2 ? `
       <div class="box" style="grid-column: span 2;">
         <div class="label">Venue 2 (Reception / Second Location)</div>
-        <div class="val">${data.eventVenue2} ${data.venue2Map ? `— <a href="${data.venue2Map}">Google Map Link</a>` : ''}</div>
+        <div class="val">${data.eventVenue2} ${data.venue2Map ? `— <a href="${data.venue2Map}">${data.venue2Map}</a>` : ''}</div>
+      </div>` : ''}
+      ${data.hasCalculatedDistance ? `
+      <div class="box" style="grid-column: span 2; background: #FAF6EE; border-color: #D9B45A;">
+        <div class="label">Driving Distance &amp; Fuel Estimate (From Harold's Home Base)</div>
+        <div class="val">${data.oneWayKm.toFixed(1)} km One-Way (${data.roundTripKm.toFixed(1)} km Round-Trip) • ~${data.litersNeeded.toFixed(2)} L @ ₱${data.gasPrice}/L (${data.fuelEff} km/L) → ₱${data.transportCost.toLocaleString()} ${data.directionsUrl ? `| <a href="${data.directionsUrl}">Google Maps Route Directions</a>` : ''}</div>
       </div>` : ''}
     </div>
 
@@ -916,9 +1024,9 @@ function exportQuotationAsPDF() {
 
     <div class="summary">
       <div class="sum-row"><span>Base Performance Package (${data.pkgLabel}):</span><strong>₱${data.basePrice.toLocaleString()}</strong></div>
-      <div class="sum-row"><span>Transport &amp; Logistics (${data.areaVal}):</span><strong>${data.isOutside ? 'Varies by Venue Distance' : '₱' + data.transportCost.toLocaleString()}</strong></div>
+      <div class="sum-row"><span>Transport &amp; Fuel (${data.hasCalculatedDistance ? data.roundTripKm.toFixed(1) + ' km Round-Trip @ ₱' + data.gasPrice + '/L' : data.areaVal}):</span><strong>${(data.isOutside && !data.hasCalculatedDistance) ? 'Varies by Venue Distance' : '₱' + data.transportCost.toLocaleString()}</strong></div>
       <div class="sum-row"><span>Custom Song Arrangements (${data.customSongsCount} × ₱500):</span><strong>₱${data.customSongsFee.toLocaleString()}</strong></div>
-      <div class="sum-row sum-total"><span>ESTIMATED TOTAL QUOTATION:</span><span>₱${data.totalAmount.toLocaleString()}${data.isOutside ? '+ (Price Varies)' : ''}</span></div>
+      <div class="sum-row sum-total"><span>ESTIMATED TOTAL QUOTATION:</span><span>₱${data.totalAmount.toLocaleString()}${(data.isOutside && !data.hasCalculatedDistance) ? '+ (Price Varies)' : ''}</span></div>
       <div class="sum-row" style="color:#FFF8DC; font-weight:700; margin-top:6px;"><span>30% Required Deposit to Reserve Date:</span><span>₱${data.depositAmount.toLocaleString()}</span></div>
       <div class="vary-note"><strong>Important Quotation Note:</strong> For Custom Quotations, events outside Pampanga, or multi-venue setups (Church, Reception, Hotel, School, Garden), final pricing will vary depending on exact travel distance, total sets/hours, sound system requirements, and custom song arrangements.</div>
     </div>
@@ -1007,13 +1115,25 @@ function exportSongListAsPDF() {
   }
 }
 
+function extractCoordsFromText(str) {
+  if (!str) return null;
+  const dMatch = str.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  if (dMatch) return { lat: parseFloat(dMatch[1]), lng: parseFloat(dMatch[2]) };
+  const atMatch = str.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+  const qCoord = str.match(/(?:[?&]q=|^\s*)(-?\d{1,2}\.\d{3,}),\s*(-?\d{2,3}\.\d{3,})/);
+  if (qCoord) return { lat: parseFloat(qCoord[1]), lng: parseFloat(qCoord[2]) };
+  return null;
+}
+
 function resolveMapSearchQuery(addressVal, mapVal) {
+  const coords = extractCoordsFromText(mapVal) || extractCoordsFromText(addressVal);
+  if (coords) return `${coords.lat},${coords.lng}`;
   const raw = (mapVal || addressVal || '').trim();
   if (!raw) return '';
-  // Extract coordinates or query if full google maps url is pasted
   const qMatch = raw.match(/[?&]q=([^&]+)/);
-  if (qMatch) return decodeURIComponent(qMatch[1]);
-  const placeMatch = raw.match(/\/maps\/place\/([^/]+)/);
+  if (qMatch) return decodeURIComponent(qMatch[1].replace(/\+/g, ' '));
+  const placeMatch = raw.match(/\/maps\/place\/([^/@]+)/);
   if (placeMatch) return decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
   if (raw.startsWith('http')) {
     return addressVal.trim() || 'Pampanga, Philippines';
@@ -1021,7 +1141,152 @@ function resolveMapSearchQuery(addressVal, mapVal) {
   return raw;
 }
 
-function locateOnGoogleMap(venueNum) {
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function geocodeVenueQuery(addressVal, mapVal) {
+  const direct = extractCoordsFromText(mapVal) || extractCoordsFromText(addressVal);
+  if (direct) return direct;
+
+  const searchCandidates = [];
+  const primary = resolveMapSearchQuery(addressVal, '');
+  if (primary) searchCandidates.push(primary);
+  if (addressVal && !addressVal.toLowerCase().includes('philippines')) {
+    searchCandidates.push(`${addressVal}, Philippines`);
+  }
+  // Fallback stripped tokens (e.g. if church/hall name has city at the end)
+  if (addressVal && addressVal.includes(',')) {
+    const tail = addressVal.split(',').slice(1).join(',').trim();
+    if (tail) searchCandidates.push(`${tail}, Philippines`);
+  }
+
+  for (const cand of searchCandidates) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ph&q=${encodeURIComponent(cand)}`;
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (res.ok) {
+        const arr = await res.json();
+        if (Array.isArray(arr) && arr.length > 0) {
+          return { lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon), displayName: arr[0].display_name };
+        }
+      }
+    } catch (_) {}
+  }
+  return null;
+}
+
+async function computeDrivingLegKm(lat1, lng1, lat2, lng2) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=false`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.routes && data.routes[0] && typeof data.routes[0].distance === 'number') {
+        return data.routes[0].distance / 1000;
+      }
+    }
+  } catch (_) {}
+  return haversineKm(lat1, lng1, lat2, lng2) * 1.3;
+}
+
+async function updateDrivingDistanceAndFuel() {
+  const config = getSiteConfig();
+  const rates = config.rates || {};
+  const homeLat = parseFloat(rates.homeBaseLat) || 14.991115;
+  const homeLng = parseFloat(rates.homeBaseLng) || 120.599693;
+  const homeMapUrl = rates.homeBaseMapUrl || 'https://maps.app.goo.gl/yRMzfz3Ki67d91im6';
+  const gasPrice = parseFloat(rates.gasPricePerLiter) || 62;
+  const fuelEff = parseFloat(rates.fuelEfficiencyKmPerL) || 10;
+  const minTransFee = parseFloat(rates.transportFeePampanga) || 500;
+
+  const venueSetting = document.getElementById('venue-setting')?.value || '';
+  const isDualVenue = venueSetting.includes('2 Sets') || venueSetting.includes('+');
+
+  const v1 = venueDistanceState.v1;
+  const v2 = isDualVenue ? venueDistanceState.v2 : null;
+
+  const summaryCard = document.getElementById('venue-distance-summary');
+  const kmBadge = document.getElementById('distance-km-badge');
+  const formulaEl = document.getElementById('distance-formula-text');
+  const linksEl = document.getElementById('generated-map-links');
+
+  if (!v1 && !v2) {
+    venueDistanceState.oneWayKm = 0;
+    venueDistanceState.roundTripKm = 0;
+    venueDistanceState.computedTransportFee = 0;
+    if (summaryCard) summaryCard.style.display = 'none';
+    calculateLiveQuotation();
+    return;
+  }
+
+  let oneWayKm = 0;
+  let roundTripKm = 0;
+  let directionsUrl = '';
+
+  if (v1 && v2) {
+    const leg1 = await computeDrivingLegKm(homeLat, homeLng, v1.lat, v1.lng);
+    const leg2 = await computeDrivingLegKm(v1.lat, v1.lng, v2.lat, v2.lng);
+    const leg3 = await computeDrivingLegKm(v2.lat, v2.lng, homeLat, homeLng);
+    oneWayKm = leg1 + leg2;
+    roundTripKm = leg1 + leg2 + leg3;
+    directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${homeLat},${homeLng}&destination=${v2.lat},${v2.lng}&waypoints=${v1.lat},${v1.lng}&travelmode=driving`;
+  } else {
+    const activeV = v1 || v2;
+    oneWayKm = await computeDrivingLegKm(homeLat, homeLng, activeV.lat, activeV.lng);
+    roundTripKm = oneWayKm * 2;
+    directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${homeLat},${homeLng}&destination=${activeV.lat},${activeV.lng}&travelmode=driving`;
+  }
+
+  const litersNeeded = roundTripKm / fuelEff;
+  const rawFuelCost = Math.ceil(litersNeeded * gasPrice);
+  const computedTransportFee = Math.max(minTransFee, rawFuelCost);
+
+  venueDistanceState.oneWayKm = oneWayKm;
+  venueDistanceState.roundTripKm = roundTripKm;
+  venueDistanceState.litersNeeded = litersNeeded;
+  venueDistanceState.rawFuelCost = rawFuelCost;
+  venueDistanceState.computedTransportFee = computedTransportFee;
+  venueDistanceState.gasPrice = gasPrice;
+  venueDistanceState.fuelEff = fuelEff;
+  venueDistanceState.directionsUrl = directionsUrl;
+
+  // Auto-switch Location Area dropdown if > 32 km one-way from Pampanga home base
+  const locationArea = document.getElementById('location-area');
+  if (locationArea) {
+    locationArea.value = oneWayKm > 32 ? 'Outside Pampanga' : 'Within Pampanga';
+  }
+
+  if (summaryCard && kmBadge && formulaEl && linksEl) {
+    summaryCard.style.display = 'block';
+    kmBadge.textContent = `${oneWayKm.toFixed(1)} km One-Way • ${roundTripKm.toFixed(1)} km Round-Trip`;
+    formulaEl.innerHTML = `
+      <div><strong>Route Distance:</strong> ${oneWayKm.toFixed(1)} km from Harold's Home Base (${roundTripKm.toFixed(1)} km round-trip)</div>
+      <div><strong>Fuel Computation:</strong> ${roundTripKm.toFixed(1)} km ÷ ${fuelEff} km/L = <strong>${litersNeeded.toFixed(2)} L</strong> × ₱${gasPrice}/L (Unleaded) = <strong>₱${rawFuelCost.toLocaleString()}</strong> ${rawFuelCost < minTransFee ? `(Minimum Transport Floor Applied: <strong style="color:var(--accent-gold);">₱${minTransFee.toLocaleString()}</strong>)` : `→ Transport Fee: <strong style="color:var(--accent-gold);">₱${computedTransportFee.toLocaleString()}</strong>`}</div>
+    `;
+
+    const linkChips = [];
+    linkChips.push(`<a href="${homeMapUrl}" target="_blank" rel="noopener" style="color:var(--accent-gold); text-decoration:underline; font-weight:600;">🏠 Point A: Harold's Home Map</a>`);
+    if (v1) {
+      linkChips.push(`<a href="${v1.mapUrl}" target="_blank" rel="noopener" style="color:#FFF8DC; text-decoration:underline; font-weight:600;">📍 Venue 1 Google Map Link</a>`);
+    }
+    if (v2) {
+      linkChips.push(`<a href="${v2.mapUrl}" target="_blank" rel="noopener" style="color:#FFF8DC; text-decoration:underline; font-weight:600;">🥂 Venue 2 Google Map Link</a>`);
+    }
+    linkChips.push(`<a href="${directionsUrl}" target="_blank" rel="noopener" style="color:#6EE7B7; text-decoration:underline; font-weight:700;">🧭 View Driving Route on Google Maps (${roundTripKm.toFixed(1)} km RT) ↗</a>`);
+    linksEl.innerHTML = linkChips.join(' <span style="color:#57534E;">|</span> ');
+  }
+
+  calculateLiveQuotation();
+}
+
+async function locateOnGoogleMap(venueNum) {
   const addrInput = document.getElementById(venueNum === 1 ? 'event-venue' : 'event-venue-2');
   const mapInput = document.getElementById(venueNum === 1 ? 'venue-1-map' : 'venue-2-map');
   const wrap = document.getElementById(venueNum === 1 ? 'map-preview-1-wrap' : 'map-preview-2-wrap');
@@ -1036,16 +1301,40 @@ function locateOnGoogleMap(venueNum) {
   }
 
   const query = resolveMapSearchQuery(addrVal, mapVal);
+  const generatedSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+
+  // Always auto-display the clickable Google Maps link in the Map Link field if not already a URL
+  if (mapInput && !mapVal.startsWith('http')) {
+    mapInput.value = generatedSearchUrl;
+  }
+
   if (iframe && wrap) {
     iframe.src = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
     wrap.style.display = 'block';
   }
-  if (extLink) {
-    extLink.href = mapVal.startsWith('http')
+
+  const resolvedCoords = await geocodeVenueQuery(addrVal, mapVal);
+  if (resolvedCoords) {
+    const exactMapUrl = mapVal.startsWith('http')
       ? mapVal
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+      : `https://www.google.com/maps?q=${resolvedCoords.lat.toFixed(6)},${resolvedCoords.lng.toFixed(6)}`;
+    if (mapInput && !mapVal.startsWith('http')) {
+      mapInput.value = exactMapUrl;
+    }
+    if (extLink) extLink.href = exactMapUrl;
+
+    venueDistanceState[venueNum === 1 ? 'v1' : 'v2'] = {
+      lat: resolvedCoords.lat,
+      lng: resolvedCoords.lng,
+      label: addrVal || query,
+      mapUrl: exactMapUrl
+    };
+    await updateDrivingDistanceAndFuel();
+    showSiteToast('Distance & Fuel Calculated!', `Located "${addrVal || query}" (${venueDistanceState.oneWayKm.toFixed(1)} km from Home Base).`);
+  } else {
+    if (extLink) extLink.href = mapVal.startsWith('http') ? mapVal : generatedSearchUrl;
+    showSiteToast('Map Preview Loaded', `Showing Google Map link for "${query}". Tip: Add city/province (e.g., Pampanga) for exact km calculation.`);
   }
-  showSiteToast('Location Preview Loaded!', `Showing Google Map for "${query}".`);
 }
 
 function initBookingForm() {
@@ -1120,6 +1409,12 @@ function initBookingForm() {
         return;
       }
 
+      const duplicate = findDuplicateSong(title, artist, ytLink);
+      if (duplicate) {
+        showSiteToast('Duplicate Song Blocked', `"${duplicate.title}" by ${duplicate.artist} (or a similar version) is already in your song list.`);
+        return;
+      }
+
       requestedSongsState.push({
         moment,
         title,
@@ -1158,6 +1453,12 @@ function initBookingForm() {
       const artist = chip.getAttribute('data-artist') || '';
       const ytLink = chip.getAttribute('data-yt') || '';
 
+      const duplicate = findDuplicateSong(title, artist, ytLink);
+      if (duplicate) {
+        showSiteToast('Already in Song List', `"${duplicate.title}" by ${duplicate.artist} is already in your requested songs table.`);
+        return;
+      }
+
       requestedSongsState.push({
         moment: 'Dinner / Reception',
         title,
@@ -1190,6 +1491,16 @@ function initBookingForm() {
   if (locateMap1Btn) locateMap1Btn.addEventListener('click', () => locateOnGoogleMap(1));
   if (locateMap2Btn) locateMap2Btn.addEventListener('click', () => locateOnGoogleMap(2));
 
+  const venue1AddrEl = document.getElementById('event-venue');
+  const venue1MapEl = document.getElementById('venue-1-map');
+  const venue2AddrEl = document.getElementById('event-venue-2');
+  const venue2MapEl = document.getElementById('venue-2-map');
+
+  if (venue1AddrEl) venue1AddrEl.addEventListener('change', () => { if (venue1AddrEl.value.trim()) locateOnGoogleMap(1); });
+  if (venue1MapEl) venue1MapEl.addEventListener('change', () => { if (venue1MapEl.value.trim()) locateOnGoogleMap(1); });
+  if (venue2AddrEl) venue2AddrEl.addEventListener('change', () => { if (venue2AddrEl.value.trim()) locateOnGoogleMap(2); });
+  if (venue2MapEl) venue2MapEl.addEventListener('change', () => { if (venue2MapEl.value.trim()) locateOnGoogleMap(2); });
+
   if (gpsMap1Btn) {
     gpsMap1Btn.addEventListener('click', () => {
       if (!('geolocation' in navigator)) {
@@ -1215,7 +1526,14 @@ function initBookingForm() {
             wrap.style.display = 'block';
           }
           if (extLink) extLink.href = gpsUrl;
-          showSiteToast('GPS Location Pinned!', 'Your current location is now linked on Google Maps.');
+          venueDistanceState.v1 = {
+            lat: latitude,
+            lng: longitude,
+            label: addrInput?.value || 'Pinned GPS Location',
+            mapUrl: gpsUrl
+          };
+          updateDrivingDistanceAndFuel();
+          showSiteToast('GPS Location Pinned!', 'Distance & fuel estimate computed from Harold\'s Home Base.');
         },
         () => {
           showSiteToast('Could Not Pin GPS', 'Location permission denied or unavailable. Paste a Google Maps link instead.');
@@ -1271,9 +1589,9 @@ function initBookingForm() {
         event_date: data.eventDate,
         event_time: data.eventTime,
         set_coverage: `${data.settingVal} (${data.pkgVal || 'Package A'})`,
-        event_venue: data.eventVenue,
+        event_venue: `${data.eventVenue}${data.venue1Map ? ' | Map: ' + data.venue1Map : ''}${data.hasCalculatedDistance ? ' (' + data.roundTripKm.toFixed(1) + ' km RT, ₱' + data.transportCost.toLocaleString() + ' Fuel/Transport)' : ''}`,
         coverage_area: data.areaVal,
-        total_quotation: `₱${data.totalAmount.toLocaleString()}${data.isOutside ? ' + Travel' : ''}`,
+        total_quotation: `₱${data.totalAmount.toLocaleString()}${(data.isOutside && !data.hasCalculatedDistance) ? ' + Travel' : ''}`,
         deposit_amount: `₱${data.depositAmount.toLocaleString()}`,
         song_list: songLines,
         special_notes: data.eventNotes,

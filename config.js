@@ -29,6 +29,11 @@ window.SITE_CONFIG = {
     "specialCover": 1000,
     "depositPercentage": 30,
     "transportFeePampanga": 500,
+    "gasPricePerLiter": 62,
+    "fuelEfficiencyKmPerL": 10,
+    "homeBaseLat": 14.991115,
+    "homeBaseLng": 120.599693,
+    "homeBaseMapUrl": "https://maps.app.goo.gl/yRMzfz3Ki67d91im6",
     "packageA": {
       "name": "Package A",
       "subtitle": "Church & Reception Coverage (2 Sets / 2 Hours)",

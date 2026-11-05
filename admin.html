@@ -467,6 +467,26 @@
           <input type="number" id="cfg-cover-price-input" class="form-input">
         </div>
       </div>
+
+      <h3 style="color: #FFFFFF; font-size: 1.2rem; margin: 1.5rem 0 1rem 0;">⛽ Fuel &amp; Driving Distance Calculator (Point A: Home Base)</h3>
+      <div class="form-group-grid">
+        <div class="form-group">
+          <label class="form-label">Current Unleaded Gas Price (₱ / Liter)</label>
+          <input type="number" step="0.5" id="cfg-gas-price-input" class="form-input" placeholder="e.g. 62">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Car Fuel Consumption (km / Liter)</label>
+          <input type="number" step="0.5" id="cfg-fuel-eff-input" class="form-input" placeholder="e.g. 10">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Home Base Coordinates (Lat, Lng)</label>
+          <input type="text" id="cfg-home-coords-input" class="form-input" placeholder="14.991115, 120.599693">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Home Base Google Maps Link</label>
+          <input type="text" id="cfg-home-map-input" class="form-input" placeholder="https://maps.app.goo.gl/yRMzfz3Ki67d91im6">
+        </div>
+      </div>
     </div>
 
     <!-- TAB 3: YOUTUBE PERFORMANCE VIDEOS -->
@@ -758,6 +778,10 @@
       document.getElementById('cfg-deposit-percent-input').value = r.depositPercentage || 30;
       document.getElementById('cfg-transport-fee-input').value = r.transportFeePampanga || 500;
       document.getElementById('cfg-cover-price-input').value = r.specialCover || 1000;
+      document.getElementById('cfg-gas-price-input').value = r.gasPricePerLiter || 62;
+      document.getElementById('cfg-fuel-eff-input').value = r.fuelEfficiencyKmPerL || 10;
+      document.getElementById('cfg-home-coords-input').value = `${r.homeBaseLat || 14.991115}, ${r.homeBaseLng || 120.599693}`;
+      document.getElementById('cfg-home-map-input').value = r.homeBaseMapUrl || 'https://maps.app.goo.gl/yRMzfz3Ki67d91im6';
       
       if (r.packageA) {
         document.getElementById('cfg-pkga-base-input').value = r.packageA.basePrice || 8000;
@@ -935,10 +959,19 @@
       const pkgbBase = parseInt(document.getElementById('cfg-pkgb-base-input').value, 10) || 5000;
       const pkgbTotal = parseInt(document.getElementById('cfg-pkgb-total-input').value, 10) || 5500;
 
+      const rawCoords = (document.getElementById('cfg-home-coords-input').value || '14.991115, 120.599693').split(',');
+      const homeLat = parseFloat(rawCoords[0]) || 14.991115;
+      const homeLng = parseFloat(rawCoords[1]) || 120.599693;
+
       activeConfig.rates = {
         specialCover: parseInt(document.getElementById('cfg-cover-price-input').value, 10) || 1000,
         depositPercentage: depPct,
         transportFeePampanga: transFee,
+        gasPricePerLiter: parseFloat(document.getElementById('cfg-gas-price-input').value) || 62,
+        fuelEfficiencyKmPerL: parseFloat(document.getElementById('cfg-fuel-eff-input').value) || 10,
+        homeBaseLat: homeLat,
+        homeBaseLng: homeLng,
+        homeBaseMapUrl: document.getElementById('cfg-home-map-input').value.trim() || 'https://maps.app.goo.gl/yRMzfz3Ki67d91im6',
         packageA: {
           name: "Package A",
           subtitle: "Church & Reception Coverage (2 Sets / 2 Hours)",
