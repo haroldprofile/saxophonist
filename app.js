@@ -1263,27 +1263,38 @@ function initBookingForm() {
       const songLines = data.songs.length > 0
         ? data.songs.map((s, i) => `${i + 1}. [${s.moment}] "${s.title}" by ${s.artist}${s.ytLink ? ' (' + s.ytLink + ')' : ''}${s.isCustom ? ' [+₱500 Custom]' : ''}`).join('\n')
         : 'None specified yet (Standard repertoire)';
+      const params = {
+        client_name: data.clientName,
+        client_phone: data.clientPhone,
+        client_email: data.clientEmail,
+        event_type: data.eventType,
+        event_date: data.eventDate,
+        event_time: data.eventTime,
+        set_coverage: `${data.settingVal} (${data.pkgVal || 'Package A'})`,
+        event_venue: data.eventVenue,
+        coverage_area: data.areaVal,
+        total_quotation: `₱${data.totalAmount.toLocaleString()}${data.isOutside ? ' + Travel' : ''}`,
+        deposit_amount: `₱${data.depositAmount.toLocaleString()}`,
+        song_list: songLines,
+        special_notes: data.eventNotes,
+        quote_ref: data.refId,
+        to_email: sec.adminEmail || "haroldcalo.trinidad@gmail.com"
+      };
+      // Configured ID first; then EmailJS's original auto-generated ID in case the rename was never saved there
+      const idsToTry = [...new Set([bookingTemplateId, 'template_7siz3z7'])];
       try {
-        await Promise.race([
-          emailjs.send(serviceId, bookingTemplateId, {
-            client_name: data.clientName,
-            client_phone: data.clientPhone,
-            client_email: data.clientEmail,
-            event_type: data.eventType,
-            event_date: data.eventDate,
-            event_time: data.eventTime,
-            set_coverage: `${data.settingVal} (${data.pkgVal || 'Package A'})`,
-            event_venue: data.eventVenue,
-            coverage_area: data.areaVal,
-            total_quotation: `₱${data.totalAmount.toLocaleString()}${data.isOutside ? ' + Travel' : ''}`,
-            deposit_amount: `₱${data.depositAmount.toLocaleString()}`,
-            song_list: songLines,
-            special_notes: data.eventNotes,
-            quote_ref: data.refId,
-            to_email: sec.adminEmail || "haroldcalo.trinidad@gmail.com"
-          }, emailjsKey),
-          new Promise((_, rej) => setTimeout(() => rej({ text: 'timed out after 8s' }), 8000))
-        ]);
+        for (let i = 0; i < idsToTry.length; i++) {
+          try {
+            await Promise.race([
+              emailjs.send(serviceId, idsToTry[i], params, emailjsKey),
+              new Promise((_, rej) => setTimeout(() => rej({ text: 'timed out after 8s' }), 8000))
+            ]);
+            break; // delivered
+          } catch (err) {
+            const notFound = err && err.status === 400 && /template/i.test(err.text || '');
+            if (!(notFound && i < idsToTry.length - 1)) throw err;
+          }
+        }
       } catch (err) {
         emailError = `${err && err.status ? err.status + ' ' : ''}${(err && (err.text || err.message)) || 'unknown error'}`;
         console.error('Booking email failed:', err);
