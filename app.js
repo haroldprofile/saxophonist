@@ -1280,8 +1280,8 @@ function initBookingForm() {
         quote_ref: data.refId,
         to_email: sec.adminEmail || "haroldcalo.trinidad@gmail.com"
       };
-      // Configured ID first; then EmailJS's original auto-generated ID in case the rename was never saved there
-      const idsToTry = [...new Set([bookingTemplateId, 'template_7siz3z7'])];
+      // Configured ID first; then known variants (EmailJS saved the ID with a trailing space, and the original auto-ID)
+      const idsToTry = [...new Set([bookingTemplateId, bookingTemplateId + ' ', 'template_7siz3z7'])];
       try {
         for (let i = 0; i < idsToTry.length; i++) {
           try {
