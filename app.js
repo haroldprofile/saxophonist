@@ -1251,6 +1251,7 @@ function initBookingForm() {
     } catch (_) {}
 
     // Send automatic email notification via EmailJS if configured
+    const config = getSiteConfig();
     const sec = config.adminSecurity || {};
     const emailjsKey = sec.emailjsPublicKey || "1fzy7njkATDe4UUfw";
     const serviceId = sec.emailjsServiceId || "service_tpm1twd";
@@ -1263,7 +1264,8 @@ function initBookingForm() {
           ? data.songs.map((s, i) => `${i + 1}. [${s.moment}] "${s.title}" by ${s.artist}${s.ytLink ? ' (' + s.ytLink + ')' : ''}${s.isCustom ? ' [+₱500 Custom]' : ''}`).join('\n')
           : 'None specified yet (Standard repertoire)';
 
-        await emailjs.send(serviceId, bookingTemplateId, {
+        await Promise.race([
+          emailjs.send(serviceId, bookingTemplateId, {
           client_name: data.clientName,
           client_phone: data.clientPhone,
           client_email: data.clientEmail,
@@ -1279,7 +1281,10 @@ function initBookingForm() {
           special_notes: data.eventNotes,
           quote_ref: data.refId,
           to_email: sec.adminEmail || "haroldcalo.trinidad@gmail.com"
-        });
+        }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('EmailJS timeout after 6s')), 6000))
+        ]);
+        showSiteToast('Inquiry Sent to Harold!', 'Your quotation & setlist was sent to Harold via email.');
       } catch (emailErr) {
         console.warn('EmailJS booking notice could not send (check template ID):', emailErr);
       }
