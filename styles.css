@@ -1089,16 +1089,17 @@ img[src*="harold-soprano.jpg"] {
 .lightbox-modal {
   position: fixed;
   inset: 0;
-  background: rgba(12, 10, 9, 0.94);
-  backdrop-filter: blur(16px);
-  z-index: 2000;
+  background: rgba(10, 8, 7, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 99999;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1.5rem;
   opacity: 0;
   visibility: hidden;
-  transition: var(--transition-normal);
+  transition: opacity 250ms ease, visibility 250ms ease;
 }
 
 .lightbox-modal.active {
@@ -1110,39 +1111,89 @@ img[src*="harold-soprano.jpg"] {
   position: relative;
   max-width: 900px;
   width: 100%;
-  max-height: 85vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
 .lightbox-content img, .lightbox-content video {
   max-width: 100%;
-  max-height: 75vh;
+  max-height: 82vh;
+  object-fit: contain;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);
+  border: 1.5px solid rgba(212, 175, 55, 0.6);
+  background: #141210;
 }
 
 .lightbox-caption {
   color: #FFFFFF;
-  margin-top: 1rem;
+  margin-top: 0.85rem;
   font-family: 'Playfair Display', serif;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 .lightbox-close-btn {
   position: absolute;
-  top: -3rem;
+  top: -2.85rem;
   right: 0;
-  background: transparent;
-  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px solid var(--accent-gold);
+  border-radius: 50%;
   color: #FFFFFF;
-  font-size: 2rem;
+  font-size: 1.6rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  min-width: 44px;
-  min-height: 44px;
+  transition: var(--transition-fast);
+  line-height: 1;
+}
+
+.lightbox-close-btn:hover {
+  background: var(--accent-gold);
+  color: var(--primary-dark);
+  transform: scale(1.08);
+}
+
+/* Facebook Review Recommendation Cards */
+.review-card a {
+  cursor: zoom-in;
+}
+
+.review-card img {
+  width: 100%;
+  height: 480px;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  transition: transform 350ms ease;
+}
+
+.review-card:hover img {
+  transform: scale(1.02);
+}
+
+.review-card .gallery-card-overlay {
+  opacity: 0 !important;
+  background: rgba(12, 10, 9, 0.75) !important;
+  transition: opacity 250ms ease;
+  pointer-events: none;
+}
+
+.review-card:hover .gallery-card-overlay {
+  opacity: 1 !important;
+}
+
+.review-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-gold) !important;
 }
 
 /* ==========================================
@@ -2224,8 +2275,8 @@ a, button { -webkit-tap-highlight-color: transparent; }
    ========================================== */
 .contact-strip-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 1.1rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
   max-width: 1140px;
   margin: 0 auto 2.5rem auto;
 }
@@ -2233,13 +2284,14 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .contact-strip-card {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  padding: 1.1rem 1.25rem;
+  gap: 1.1rem;
+  padding: 1.25rem 1.4rem;
   background: #FAF8F5;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   transition: var(--transition-fast);
   box-shadow: var(--shadow-sm);
+  min-width: 0;
 }
 
 .contact-strip-card:hover {
@@ -2250,20 +2302,54 @@ a, button { -webkit-tap-highlight-color: transparent; }
 }
 
 .contact-strip-card .info-icon-wrap {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--accent-gold-light);
+  color: var(--accent-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.contact-strip-card .info-text-wrap {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .contact-strip-card .info-label {
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 0.25rem;
 }
 
 .contact-strip-card .info-value {
-  font-size: 0.95rem;
-  margin-top: 0.15rem;
-  line-height: 1.25;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+  margin-top: 0;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.contact-strip-card .info-value a {
+  color: var(--primary-dark);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  display: inline;
+}
+
+.contact-strip-card .info-value a:hover {
+  color: var(--accent-gold-hover);
+  text-decoration: underline;
 }
 
 .booking-suite-full {

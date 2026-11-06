@@ -685,7 +685,7 @@ function initGalleryLightbox() {
   const modal = document.getElementById('lightbox-modal');
   const modalImg = document.getElementById('lightbox-img');
   const modalCaption = document.getElementById('lightbox-caption');
-  const closeBtn = document.getElementById('lightbox-close');
+  const closeBtn = document.getElementById('lightbox-close-btn') || document.getElementById('lightbox-close');
   const cards = document.querySelectorAll('.gallery-card');
 
   cards.forEach(card => {
@@ -697,6 +697,7 @@ function initGalleryLightbox() {
         modalCaption.textContent = caption;
         modal.classList.add('active');
         modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
       }
     });
   });
@@ -705,6 +706,7 @@ function initGalleryLightbox() {
     if (modal) {
       modal.classList.remove('active');
       modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
     }
   }
 
@@ -712,7 +714,7 @@ function initGalleryLightbox() {
 
   if (modal) {
     modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
+      if (e.target === modal || e.target.classList.contains('lightbox-close-btn')) {
         closeModal();
       }
     });
@@ -1856,31 +1858,51 @@ function initReviewLightbox() {
   const modal = document.getElementById('lightbox-modal');
   const modalImg = document.getElementById('lightbox-img');
   const modalCaption = document.getElementById('lightbox-caption');
-  const closeBtn = document.getElementById('lightbox-close-btn');
+  const closeBtn = document.getElementById('lightbox-close-btn') || document.getElementById('lightbox-close');
 
   const reviewTriggers = document.querySelectorAll('.review-lightbox-trigger');
+
+  function openLightbox(imgSrc, captionText) {
+    if (!modal || !modalImg) return;
+    modalImg.src = imgSrc;
+    if (modalCaption) modalCaption.textContent = captionText;
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    if (!modal) return;
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
 
   reviewTriggers.forEach((trigger, idx) => {
     trigger.addEventListener('click', (e) => {
       e.preventDefault();
       const imgSrc = trigger.getAttribute('href');
-      if (modal && modalImg && modalCaption) {
-        modalImg.src = imgSrc;
-        modalCaption.textContent = `Harold Trinidad Client Recommendation #${idx + 1} (Facebook Feedback)`;
-        modal.classList.add('active');
-        modal.setAttribute('aria-hidden', 'false');
-      }
+      openLightbox(imgSrc, `Harold Trinidad Client Recommendation #${idx + 1} (Facebook Feedback)`);
     });
   });
 
   if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
-      if (modal) {
-        modal.classList.remove('active');
-        modal.setAttribute('aria-hidden', 'true');
+    closeBtn.addEventListener('click', closeLightbox);
+  }
+
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal || e.target.classList.contains('lightbox-close-btn')) {
+        closeLightbox();
       }
     });
   }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal && modal.classList.contains('active')) {
+      closeLightbox();
+    }
+  });
 }
 
 /* ==========================================
