@@ -474,6 +474,8 @@ function calculateLiveQuotation() {
     }
   }
 
+  updateBuilderStepProgress();
+
   return {
     refId: currentQuoteRef,
     pkgVal,
@@ -498,6 +500,28 @@ function calculateLiveQuotation() {
     depPct,
     songs
   };
+}
+
+function updateBuilderStepProgress() {
+  const nameOk = (document.getElementById('client-name')?.value.trim().length || 0) >= 3;
+  const phoneOk = (document.getElementById('client-phone')?.value.replace(/\D/g, '').length || 0) >= 10;
+  const emailOk = (document.getElementById('client-email')?.value.trim().includes('@')) || false;
+  const dateOk = Boolean(document.getElementById('event-date')?.value);
+
+  const step1Done = nameOk && phoneOk && emailOk && dateOk;
+  const step2Done = (document.getElementById('event-venue')?.value.trim().length || 0) >= 5 || Boolean(venueDistanceState.v1);
+  const step3Done = requestedSongsState.length > 0;
+  const step4Done = (document.getElementById('event-notes')?.value.trim().length || 0) > 0;
+  const step5Done = isQuotationUnlocked === true;
+
+  const states = [step1Done, step2Done, step3Done, step4Done, step5Done];
+  states.forEach((done, idx) => {
+    const num = idx + 1;
+    const pill = document.getElementById(`step-pill-${num}`);
+    const badge = document.getElementById(`step-badge-${num}`);
+    if (pill) pill.classList.toggle('completed', done);
+    if (badge) badge.textContent = done ? '✓' : String(num);
+  });
 }
 
 function initDepositCalculator() {
@@ -1412,6 +1436,24 @@ function initBookingForm() {
 
   if (!form) return;
 
+  // Interactive 5-Step Quick-Jump Navigation Bar
+  const stepPills = document.querySelectorAll('.builder-step-pill');
+  stepPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      stepPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const targetId = pill.getAttribute('data-target');
+      const targetEl = targetId ? document.getElementById(targetId) : null;
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  // Live Step Progress updates as user fills inputs
+  form.addEventListener('input', updateBuilderStepProgress);
+  form.addEventListener('change', updateBuilderStepProgress);
+
   // Render initial song table
   renderRequestedSongsTable();
 
@@ -1524,6 +1566,7 @@ function initBookingForm() {
             ? `${notesEl.value.trim()}\n• ${cond}`
             : `• ${cond}`;
         }
+        updateBuilderStepProgress();
         showSiteToast('Condition Added', `Added "${cond}" to special instructions.`);
       }
     });
