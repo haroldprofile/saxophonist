@@ -1290,6 +1290,7 @@ async function updateDrivingDistanceAndFuel() {
   let oneWayKm = 0;
   let roundTripKm = 0;
   let directionsUrl = '';
+  let legBreakdownHtml = '';
 
   if (v1 && v2) {
     const leg1 = await computeDrivingLegKm(homeLat, homeLng, v1.lat, v1.lng);
@@ -1297,12 +1298,15 @@ async function updateDrivingDistanceAndFuel() {
     const leg3 = await computeDrivingLegKm(v2.lat, v2.lng, homeLat, homeLng);
     oneWayKm = leg1 + leg2;
     roundTripKm = leg1 + leg2 + leg3;
-    directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${homeLat},${homeLng}&destination=${v2.lat},${v2.lng}&waypoints=${v1.lat},${v1.lng}&travelmode=driving`;
+    // Full 3-stop round-trip route on Google Maps: Home -> Venue 1 -> Venue 2 -> Home
+    directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${homeLat},${homeLng}&destination=${homeLat},${homeLng}&waypoints=${encodeURIComponent(`${v1.lat},${v1.lng}|${v2.lat},${v2.lng}`)}&travelmode=driving`;
+    legBreakdownHtml = `<div style="font-size: 0.8rem; color: #D6D3D1; margin-top: 0.15rem;"><strong>3-Stop Route Breakdown:</strong> Home → Venue 1 (<strong>${leg1.toFixed(1)} km</strong>) + Venue 1 → Venue 2 (<strong>${leg2.toFixed(1)} km</strong>) + Venue 2 → Home (<strong>${leg3.toFixed(1)} km</strong>) = <strong>${roundTripKm.toFixed(1)} km Total</strong></div>`;
   } else {
     const activeV = v1 || v2;
     oneWayKm = await computeDrivingLegKm(homeLat, homeLng, activeV.lat, activeV.lng);
     roundTripKm = oneWayKm * 2;
-    directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${homeLat},${homeLng}&destination=${activeV.lat},${activeV.lng}&travelmode=driving`;
+    // Full round-trip route on Google Maps: Home -> Venue -> Home
+    directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${homeLat},${homeLng}&destination=${homeLat},${homeLng}&waypoints=${activeV.lat},${activeV.lng}&travelmode=driving`;
   }
 
   const litersNeeded = roundTripKm / fuelEff;
@@ -1326,15 +1330,19 @@ async function updateDrivingDistanceAndFuel() {
 
   if (summaryCard && kmBadge && formulaEl && linksEl) {
     summaryCard.style.display = 'block';
-    kmBadge.textContent = `${oneWayKm.toFixed(1)} km One-Way • ${roundTripKm.toFixed(1)} km Round-Trip`;
+    kmBadge.textContent = v1 && v2
+      ? `2 Venues: ${oneWayKm.toFixed(1)} km Outbound • ${roundTripKm.toFixed(1)} km Full Loop`
+      : `${oneWayKm.toFixed(1)} km One-Way • ${roundTripKm.toFixed(1)} km Round-Trip`;
     if (isQuotationUnlocked) {
       formulaEl.innerHTML = `
         <div><strong>Route Distance:</strong> ${oneWayKm.toFixed(1)} km from Harold's Home Base (${roundTripKm.toFixed(1)} km round-trip)</div>
+        ${legBreakdownHtml}
         <div><strong>Fuel Computation:</strong> ${roundTripKm.toFixed(1)} km ÷ ${fuelEff} km/L = <strong>${litersNeeded.toFixed(2)} L</strong> × ₱${gasPrice}/L (Unleaded) = <strong>₱${rawFuelCost.toLocaleString()}</strong> ${rawFuelCost < minTransFee ? `(Minimum Transport Floor Applied: <strong style="color:var(--accent-gold);">₱${minTransFee.toLocaleString()}</strong>)` : `→ Transport Fee: <strong style="color:var(--accent-gold);">₱${computedTransportFee.toLocaleString()}</strong>`}</div>
       `;
     } else {
       formulaEl.innerHTML = `
         <div><strong>Route Distance:</strong> ${oneWayKm.toFixed(1)} km from Harold's Home Base (<strong>${roundTripKm.toFixed(1)} km round-trip</strong>)</div>
+        ${legBreakdownHtml}
         <div style="color: var(--accent-gold); font-size: 0.82rem; margin-top: 0.2rem;">🔒 Exact Fuel &amp; Transport Cost is computed (${litersNeeded.toFixed(1)} L round-trip) and will unlock upon submitting your quotation below.</div>
       `;
     }
