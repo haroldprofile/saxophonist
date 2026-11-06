@@ -385,6 +385,7 @@ function calculateLiveQuotation() {
   const totalCostEl = document.getElementById('summary-total-cost');
   const depositCostEl = document.getElementById('summary-deposit-cost');
   const exportPdfBtn = document.getElementById('export-pdf-btn');
+  const exportSongsPdfBtn = document.getElementById('export-songs-pdf-btn');
   const exportImgBtn = document.getElementById('export-img-btn');
   const exportPdfLabel = document.getElementById('export-pdf-btn-label');
   const exportImgLabel = document.getElementById('export-img-btn-label');
@@ -406,21 +407,35 @@ function calculateLiveQuotation() {
         : '';
       lockedSummaryEl.innerHTML = `
         <div style="margin-bottom: 0.35rem;"><strong>Selected Coverage:</strong> ${pkgLabel} (${areaVal})${distInfo} • <strong>Setlist:</strong> ${songs.length} Song${songs.length === 1 ? '' : 's'}${customSongsCount > 0 ? ` (${customSongsCount} Custom)` : ''}</div>
-        <div>Complete your contact &amp; event details above and click <strong>"Submit &amp; Unlock My Official Quotation"</strong> below to immediately reveal your itemized package investment, distance-based transport &amp; fuel calculation, and unlock 1-click PDF &amp; PNG quotation downloads.</div>
+        <div>Complete your contact &amp; event details above and click <strong>"Submit &amp; Unlock My Official Quotation"</strong> below. Once your inquiry is submitted to Harold, your itemized quotation and PDF/PNG downloads will unlock immediately.</div>
       `;
     }
-    if (exportPdfBtn) exportPdfBtn.style.opacity = '0.65';
-    if (exportImgBtn) exportImgBtn.style.opacity = '0.65';
-    if (exportPdfLabel) exportPdfLabel.textContent = '🔒 Unlock Quote PDF';
-    if (exportImgLabel) exportImgLabel.textContent = '🔒 Unlock Quote PNG';
+    if (exportPdfBtn) exportPdfBtn.style.display = 'none';
+    if (exportImgBtn) exportImgBtn.style.display = 'none';
+    if (exportSongsPdfBtn) {
+      exportSongsPdfBtn.style.gridColumn = '1 / -1';
+      const span = exportSongsPdfBtn.querySelector('span');
+      if (span) span.textContent = 'Download Requested Song List (PDF)';
+    }
   } else {
     if (eyebrowEl) eyebrowEl.textContent = '🔓 UNLOCKED OFFICIAL INSTANT QUOTATION';
     if (lockedBannerEl) lockedBannerEl.style.display = 'none';
     if (unlockedLinesEl) unlockedLinesEl.style.display = 'block';
-    if (exportPdfBtn) exportPdfBtn.style.opacity = '1';
-    if (exportImgBtn) exportImgBtn.style.opacity = '1';
-    if (exportPdfLabel) exportPdfLabel.textContent = 'Download Quotation PDF';
-    if (exportImgLabel) exportImgLabel.textContent = 'Save as Image (PNG)';
+    if (exportPdfBtn) {
+      exportPdfBtn.style.display = 'inline-flex';
+      exportPdfBtn.style.opacity = '1';
+    }
+    if (exportImgBtn) {
+      exportImgBtn.style.display = 'inline-flex';
+      exportImgBtn.style.opacity = '1';
+    }
+    if (exportSongsPdfBtn) {
+      exportSongsPdfBtn.style.gridColumn = 'auto';
+      const span = exportSongsPdfBtn.querySelector('span');
+      if (span) span.textContent = 'Song List PDF';
+    }
+    if (exportPdfLabel) exportPdfLabel.textContent = 'Quotation PDF';
+    if (exportImgLabel) exportImgLabel.textContent = 'Save Quote PNG';
 
     if (areaBadgeEl) {
       areaBadgeEl.textContent = hasCalculatedDistance
@@ -1602,12 +1617,42 @@ function initBookingForm() {
       return;
     }
 
+    // Strict anti-scraper / anti-competitor validation for real inquiry identity
+    const rawName = (document.getElementById('client-name')?.value || '').trim();
+    const rawPhone = (document.getElementById('client-phone')?.value || '').trim();
+    const rawEmail = (document.getElementById('client-email')?.value || '').trim().toLowerCase();
+    const rawVenue = (document.getElementById('event-venue')?.value || '').trim();
+    const digitsOnly = rawPhone.replace(/\D/g, '');
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(rawEmail) &&
+      !/(test|fake|example|asdf|qwer|none|null|admin|temp|mailinator|yopmail|1234)/i.test(rawEmail);
+
+    if (rawName.length < 3 || /^(test|abc|asdf|qwer|none|na|n\/a|xxx|123)/i.test(rawName)) {
+      showSiteToast('Valid Full Name Required', 'Please enter your real full name so Harold can address your official quotation.');
+      document.getElementById('client-name')?.focus();
+      return;
+    }
+    if (digitsOnly.length < 10 || /^(\d)\1+$/.test(digitsOnly)) {
+      showSiteToast('Valid Mobile / Viber Number Required', 'Please enter an active 10 or 11-digit mobile/Viber number (e.g. 0917 123 4567).');
+      document.getElementById('client-phone')?.focus();
+      return;
+    }
+    if (!emailValid) {
+      showSiteToast('Valid Email Address Required', 'Please enter a valid active email address where your official quotation will be sent.');
+      document.getElementById('client-email')?.focus();
+      return;
+    }
+    if (rawVenue.length < 5) {
+      showSiteToast('Venue Location Required', 'Please enter the specific church, hotel, or reception venue name and city.');
+      document.getElementById('event-venue')?.focus();
+      return;
+    }
+
     if (submitBtn) submitBtn.disabled = true;
     if (spinner) spinner.style.display = 'inline-block';
-    if (btnText) btnText.textContent = 'Unlocking Official Quotation & Calculating Route...';
+    if (btnText) btnText.textContent = 'Submitting Inquiry & Verifying Details...';
 
     // Ensure venue distance & fuel are geocoded if user typed an address without clicking Locate
-    const v1InputVal = document.getElementById('event-venue')?.value.trim() || '';
+    const v1InputVal = rawVenue;
     const v2InputVal = document.getElementById('event-venue-2')?.value.trim() || '';
     const settingValNow = document.getElementById('venue-setting')?.value || '';
     const isDualNow = settingValNow.includes('2 Sets') || settingValNow.includes('+');
@@ -1619,21 +1664,15 @@ function initBookingForm() {
       await locateOnGoogleMap(2);
     }
 
-    // Unlock the quotation on-screen!
-    isQuotationUnlocked = true;
-    renderRequestedSongsTable();
-    await updateDrivingDistanceAndFuel();
+    // Collect full data while UI is still locked so we can transmit to Harold FIRST
     const data = collectFullFormData();
     const summaryText = buildTextSummary(data);
-
-    // Scroll the newly unlocked quotation card into view so the client sees their exact numbers immediately
-    document.getElementById('deposit-summary-box')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     try {
       await navigator.clipboard.writeText(summaryText);
     } catch (_) {}
 
-    // Send booking email via EmailJS - report the REAL result, never fake success
+    // Send booking email via EmailJS FIRST — Harold must receive who is inquiring before prices unlock!
     const sec = (getSiteConfig().adminSecurity) || {};
     const emailjsKey = sec.emailjsPublicKey || "1fzy7njkATDe4UUfw";
     const serviceId = sec.emailjsServiceId || "service_tpm1twd";
@@ -1663,7 +1702,6 @@ function initBookingForm() {
         quote_ref: data.refId,
         to_email: sec.adminEmail || "haroldcalo.trinidad@gmail.com"
       };
-      // Configured ID first; then known variants (EmailJS saved the ID with a trailing space, and the original auto-ID)
       const idsToTry = [...new Set([bookingTemplateId, bookingTemplateId + ' ', 'template_7siz3z7'])];
       try {
         for (let i = 0; i < idsToTry.length; i++) {
@@ -1686,13 +1724,22 @@ function initBookingForm() {
 
     if (submitBtn) submitBtn.disabled = false;
     if (spinner) spinner.style.display = 'none';
+
+    // If EmailJS was blocked or failed, do NOT unlock prices silently — require sending via Messenger or fixing email
+    if (emailError) {
+      if (btnText) btnText.textContent = 'Submit & Unlock My Official Quotation';
+      showSiteToast('Submission Could Not Be Verified', `Could not deliver email (${emailError}). Please check your email address or message Harold directly on Messenger.`);
+      return;
+    }
+
+    // Inquiry is officially delivered to Harold's inbox! Now unlock the quotation & export buttons on-screen
+    isQuotationUnlocked = true;
+    renderRequestedSongsTable();
+    await updateDrivingDistanceAndFuel();
     if (btnText) btnText.textContent = 'Quotation Unlocked ✓ (Resend / Update Inquiry)';
 
-    if (emailError) {
-      showSiteToast('Quotation Unlocked On-Screen!', `Your official quotation is now unlocked above. Opening Messenger to send your setlist directly...`);
-    } else {
-      showSiteToast('Official Quotation Unlocked & Emailed!', 'Your itemized quotation is now unlocked above and sent to your email! Opening Messenger...');
-    }
+    document.getElementById('deposit-summary-box')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showSiteToast('Official Quotation Unlocked & Emailed!', 'Harold has received your inquiry and your itemized quotation is now unlocked above!');
     setTimeout(() => window.open(`https://m.me/harold.calotrinidad?text=${encodeURIComponent(summaryText)}`, '_blank', 'noopener'), 900);
   });
 }
