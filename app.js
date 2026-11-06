@@ -56,7 +56,7 @@ async function loadClientDetails() {
 
   // Apply Config Data to DOM
   if (artist.name) {
-    document.title = `${artist.name} | Professional Saxophonist - Wedding Rates 2026`;
+    document.title = `${artist.name} | Professional Saxophonist - 2026 Packages & Instant Quotation`;
     document.querySelectorAll('.cfg-target-artist-name').forEach(el => el.textContent = artist.name);
   }
   if (artist.tagline) {
@@ -91,32 +91,10 @@ async function loadClientDetails() {
     });
   }
 
-  // Sync Package A & B Rates dynamically across Hero, Cards, Table & Select
-  const pkga = rates.packageA;
-  const pkgb = rates.packageB;
+  // Sync Deposit Percentage in Hero stat card (pricing stays gated until form submission)
   const depPct = rates.depositPercentage || 30;
-  if (pkga && pkgb) {
-    const statNums = document.querySelectorAll('.card-stats-grid .stat-num');
-    if (statNums[0]) statNums[0].textContent = `₱${pkga.totalPrice.toLocaleString()}`;
-    if (statNums[1]) statNums[1].textContent = `₱${pkgb.totalPrice.toLocaleString()}`;
-    if (statNums[2]) statNums[2].textContent = `${depPct}%`;
-
-    const pkgACard = document.getElementById('package-a-card');
-    if (pkgACard) {
-      const priceEl = pkgACard.querySelector('div[style*="2.25rem"]');
-      if (priceEl) priceEl.innerHTML = `₱ ${pkga.totalPrice.toLocaleString()} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 400;">Total</span>`;
-      const depItem = pkgACard.querySelectorAll('.service-feature-item')[3];
-      if (depItem) depItem.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Reservation Deposit: ₱ ${pkga.depositAmount.toLocaleString()} (${depPct}%)`;
-    }
-
-    const pkgBCard = document.getElementById('package-b-card');
-    if (pkgBCard) {
-      const priceEl = pkgBCard.querySelector('div[style*="2.25rem"]');
-      if (priceEl) priceEl.innerHTML = `₱ ${pkgb.totalPrice.toLocaleString()} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 400;">Total</span>`;
-      const depItem = pkgBCard.querySelectorAll('.service-feature-item')[3];
-      if (depItem) depItem.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Reservation Deposit: ₱ ${pkgb.depositAmount.toLocaleString()} (${depPct}%)`;
-    }
-  }
+  const statNums = document.querySelectorAll('.card-stats-grid .stat-num');
+  if (statNums[2]) statNums[2].textContent = `${depPct}%`;
 
   // Sync Dynamic Client Reviews if modified in Admin
   if (Array.isArray(config.reviews) && config.reviews.length > 0) {
@@ -161,6 +139,7 @@ async function loadClientDetails() {
    2. LIVE QUOTATION & MODAL SONG TABLE ENGINE
    ========================================== */
 let currentQuoteRef = 'HT-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000);
+let isQuotationUnlocked = false;
 
 let requestedSongsState = [
   {
@@ -288,7 +267,7 @@ function renderRequestedSongsTable() {
       <td style="font-weight: 700;">${s.title}</td>
       <td>${s.artist}</td>
       <td>${s.ytLink ? `<a href="${s.ytLink}" target="_blank" rel="noopener" style="color: var(--accent-gold-hover); font-weight: 600; text-decoration: underline;">▶ YouTube Link</a>` : '<span style="color: var(--text-muted); font-size: 0.78rem;">Standard</span>'}</td>
-      <td>${s.isCustom ? '<span style="color: #B45309; font-weight: 700; font-size: 0.78rem;">+₱500 Custom</span>' : '<span style="color: #15803D; font-weight: 600; font-size: 0.78rem;">Repertoire (Free)</span>'}</td>
+      <td>${s.isCustom ? (isQuotationUnlocked ? '<span style="color: #B45309; font-weight: 700; font-size: 0.78rem;">+₱500 Custom</span>' : '<span style="color: #B45309; font-weight: 700; font-size: 0.78rem;">Custom Arrangement</span>') : '<span style="color: #15803D; font-weight: 600; font-size: 0.78rem;">Repertoire (Included)</span>'}</td>
       <td style="text-align: center;">
         <button type="button" class="song-table-delete-btn" data-del-idx="${idx}" aria-label="Delete song">✕ Delete</button>
       </td>
@@ -391,8 +370,12 @@ function calculateLiveQuotation() {
   const depositAmount = Math.round(totalAmount * (depPct / 100));
 
   // Update DOM
+  const eyebrowEl = document.getElementById('summary-eyebrow-text');
   const pkgTitleEl = document.getElementById('summary-pkg-title');
   const areaBadgeEl = document.getElementById('summary-area-badge');
+  const lockedBannerEl = document.getElementById('quote-locked-banner');
+  const lockedSummaryEl = document.getElementById('quote-locked-summary');
+  const unlockedLinesEl = document.getElementById('quote-unlocked-lines');
   const areaLabelEl = document.getElementById('summary-area-label');
   const baseCostEl = document.getElementById('summary-base-cost');
   const transCostEl = document.getElementById('summary-transport-cost');
@@ -401,42 +384,79 @@ function calculateLiveQuotation() {
   const customCostEl = document.getElementById('summary-custom-songs-cost');
   const totalCostEl = document.getElementById('summary-total-cost');
   const depositCostEl = document.getElementById('summary-deposit-cost');
+  const exportPdfBtn = document.getElementById('export-pdf-btn');
+  const exportImgBtn = document.getElementById('export-img-btn');
+  const exportPdfLabel = document.getElementById('export-pdf-btn-label');
+  const exportImgLabel = document.getElementById('export-img-btn-label');
 
   if (pkgTitleEl) pkgTitleEl.textContent = pkgLabel;
-  if (areaBadgeEl) {
-    areaBadgeEl.textContent = hasCalculatedDistance
-      ? `${venueDistanceState.roundTripKm.toFixed(1)} km Round-Trip`
-      : (isOutside ? 'Custom / Price Varies' : 'Pampanga Rate');
-  }
-  if (areaLabelEl) {
-    areaLabelEl.textContent = hasCalculatedDistance
-      ? `${areaVal} (${venueDistanceState.roundTripKm.toFixed(1)} km RT)`
-      : areaVal;
-  }
-  if (baseCostEl) baseCostEl.textContent = isCustomQuote ? `₱${basePrice.toLocaleString()} (Starting Base — Varies)` : `₱${basePrice.toLocaleString()}`;
-  if (transCostEl) {
-    if (hasCalculatedDistance) {
-      transCostEl.textContent = `₱${transportCost.toLocaleString()} (${venueDistanceState.roundTripKm.toFixed(1)} km @ ₱${venueDistanceState.gasPrice}/L)`;
-    } else {
-      transCostEl.textContent = isOutside ? 'Locate Venue on Map to Compute' : `₱${transportCost.toLocaleString()}`;
+
+  if (!isQuotationUnlocked) {
+    if (eyebrowEl) eyebrowEl.textContent = '🔒 OFFICIAL INSTANT QUOTATION — READY TO UNLOCK';
+    if (areaBadgeEl) {
+      areaBadgeEl.textContent = hasCalculatedDistance
+        ? `${venueDistanceState.roundTripKm.toFixed(1)} km Round-Trip`
+        : 'Unlock on Submit';
     }
-  }
+    if (lockedBannerEl) lockedBannerEl.style.display = 'block';
+    if (unlockedLinesEl) unlockedLinesEl.style.display = 'none';
+    if (lockedSummaryEl) {
+      const distInfo = hasCalculatedDistance
+        ? ` • <strong>Route Distance:</strong> ${venueDistanceState.oneWayKm.toFixed(1)} km One-Way (${venueDistanceState.roundTripKm.toFixed(1)} km Round-Trip)`
+        : '';
+      lockedSummaryEl.innerHTML = `
+        <div style="margin-bottom: 0.35rem;"><strong>Selected Coverage:</strong> ${pkgLabel} (${areaVal})${distInfo} • <strong>Setlist:</strong> ${songs.length} Song${songs.length === 1 ? '' : 's'}${customSongsCount > 0 ? ` (${customSongsCount} Custom)` : ''}</div>
+        <div>Complete your contact &amp; event details above and click <strong>"Submit &amp; Unlock My Official Quotation"</strong> below to immediately reveal your itemized package investment, distance-based transport &amp; fuel calculation, and unlock 1-click PDF &amp; PNG quotation downloads.</div>
+      `;
+    }
+    if (exportPdfBtn) exportPdfBtn.style.opacity = '0.65';
+    if (exportImgBtn) exportImgBtn.style.opacity = '0.65';
+    if (exportPdfLabel) exportPdfLabel.textContent = '🔒 Unlock Quote PDF';
+    if (exportImgLabel) exportImgLabel.textContent = '🔒 Unlock Quote PNG';
+  } else {
+    if (eyebrowEl) eyebrowEl.textContent = '🔓 UNLOCKED OFFICIAL INSTANT QUOTATION';
+    if (lockedBannerEl) lockedBannerEl.style.display = 'none';
+    if (unlockedLinesEl) unlockedLinesEl.style.display = 'block';
+    if (exportPdfBtn) exportPdfBtn.style.opacity = '1';
+    if (exportImgBtn) exportImgBtn.style.opacity = '1';
+    if (exportPdfLabel) exportPdfLabel.textContent = 'Download Quotation PDF';
+    if (exportImgLabel) exportImgLabel.textContent = 'Save as Image (PNG)';
 
-  if (customRowEl) {
-    customRowEl.style.display = customSongsCount > 0 ? 'flex' : 'none';
-    if (customCountEl) customCountEl.textContent = customSongsCount;
-    if (customCostEl) customCostEl.textContent = `₱${customSongsFee.toLocaleString()}`;
-  }
+    if (areaBadgeEl) {
+      areaBadgeEl.textContent = hasCalculatedDistance
+        ? `${venueDistanceState.roundTripKm.toFixed(1)} km Round-Trip`
+        : (isOutside ? 'Custom / Price Varies' : 'Pampanga Rate');
+    }
+    if (areaLabelEl) {
+      areaLabelEl.textContent = hasCalculatedDistance
+        ? `${areaVal} (${venueDistanceState.roundTripKm.toFixed(1)} km RT)`
+        : areaVal;
+    }
+    if (baseCostEl) baseCostEl.textContent = isCustomQuote ? `₱${basePrice.toLocaleString()} (Starting Base — Varies)` : `₱${basePrice.toLocaleString()}`;
+    if (transCostEl) {
+      if (hasCalculatedDistance) {
+        transCostEl.textContent = `₱${transportCost.toLocaleString()} (${venueDistanceState.roundTripKm.toFixed(1)} km @ ₱${venueDistanceState.gasPrice}/L)`;
+      } else {
+        transCostEl.textContent = isOutside ? 'Locate Venue on Map to Compute' : `₱${transportCost.toLocaleString()}`;
+      }
+    }
 
-  if (totalCostEl) {
-    totalCostEl.textContent = (isOutside && !hasCalculatedDistance)
-      ? `₱${totalAmount.toLocaleString()}+ (Price Varies by Location/Setup)`
-      : `₱${totalAmount.toLocaleString()}`;
-  }
-  if (depositCostEl) {
-    depositCostEl.textContent = (isOutside && !hasCalculatedDistance)
-      ? `₱${depositAmount.toLocaleString()}+ (${depPct}% of Final Agreed Quote)`
-      : `₱${depositAmount.toLocaleString()} (${depPct}% Downpayment)`;
+    if (customRowEl) {
+      customRowEl.style.display = customSongsCount > 0 ? 'flex' : 'none';
+      if (customCountEl) customCountEl.textContent = `${customSongsCount} × ₱500`;
+      if (customCostEl) customCostEl.textContent = `₱${customSongsFee.toLocaleString()}`;
+    }
+
+    if (totalCostEl) {
+      totalCostEl.textContent = (isOutside && !hasCalculatedDistance)
+        ? `₱${totalAmount.toLocaleString()}+ (Price Varies by Location/Setup)`
+        : `₱${totalAmount.toLocaleString()}`;
+    }
+    if (depositCostEl) {
+      depositCostEl.textContent = (isOutside && !hasCalculatedDistance)
+        ? `₱${depositAmount.toLocaleString()}+ (${depPct}% of Final Agreed Quote)`
+        : `₱${depositAmount.toLocaleString()} (${depPct}% Downpayment)`;
+    }
   }
 
   return {
@@ -1266,10 +1286,17 @@ async function updateDrivingDistanceAndFuel() {
   if (summaryCard && kmBadge && formulaEl && linksEl) {
     summaryCard.style.display = 'block';
     kmBadge.textContent = `${oneWayKm.toFixed(1)} km One-Way • ${roundTripKm.toFixed(1)} km Round-Trip`;
-    formulaEl.innerHTML = `
-      <div><strong>Route Distance:</strong> ${oneWayKm.toFixed(1)} km from Harold's Home Base (${roundTripKm.toFixed(1)} km round-trip)</div>
-      <div><strong>Fuel Computation:</strong> ${roundTripKm.toFixed(1)} km ÷ ${fuelEff} km/L = <strong>${litersNeeded.toFixed(2)} L</strong> × ₱${gasPrice}/L (Unleaded) = <strong>₱${rawFuelCost.toLocaleString()}</strong> ${rawFuelCost < minTransFee ? `(Minimum Transport Floor Applied: <strong style="color:var(--accent-gold);">₱${minTransFee.toLocaleString()}</strong>)` : `→ Transport Fee: <strong style="color:var(--accent-gold);">₱${computedTransportFee.toLocaleString()}</strong>`}</div>
-    `;
+    if (isQuotationUnlocked) {
+      formulaEl.innerHTML = `
+        <div><strong>Route Distance:</strong> ${oneWayKm.toFixed(1)} km from Harold's Home Base (${roundTripKm.toFixed(1)} km round-trip)</div>
+        <div><strong>Fuel Computation:</strong> ${roundTripKm.toFixed(1)} km ÷ ${fuelEff} km/L = <strong>${litersNeeded.toFixed(2)} L</strong> × ₱${gasPrice}/L (Unleaded) = <strong>₱${rawFuelCost.toLocaleString()}</strong> ${rawFuelCost < minTransFee ? `(Minimum Transport Floor Applied: <strong style="color:var(--accent-gold);">₱${minTransFee.toLocaleString()}</strong>)` : `→ Transport Fee: <strong style="color:var(--accent-gold);">₱${computedTransportFee.toLocaleString()}</strong>`}</div>
+      `;
+    } else {
+      formulaEl.innerHTML = `
+        <div><strong>Route Distance:</strong> ${oneWayKm.toFixed(1)} km from Harold's Home Base (<strong>${roundTripKm.toFixed(1)} km round-trip</strong>)</div>
+        <div style="color: var(--accent-gold); font-size: 0.82rem; margin-top: 0.2rem;">🔒 Exact Fuel &amp; Transport Cost is computed (${litersNeeded.toFixed(1)} L round-trip) and will unlock upon submitting your quotation below.</div>
+      `;
+    }
 
     const linkChips = [];
     linkChips.push(`<a href="${homeMapUrl}" target="_blank" rel="noopener" style="color:var(--accent-gold); text-decoration:underline; font-weight:600;">🏠 Point A: Harold's Home Map</a>`);
@@ -1543,11 +1570,29 @@ function initBookingForm() {
     });
   }
 
-  // Export Buttons
-  if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportQuotationAsPDF);
+  // Export Buttons (Quotation PDF & PNG require unlocking via form submission first)
+  if (exportPdfBtn) {
+    exportPdfBtn.addEventListener('click', () => {
+      if (!isQuotationUnlocked) {
+        showSiteToast('Unlock Quotation First', 'Complete your contact & event details and click "Submit & Unlock My Official Quotation" to download your PDF.');
+        form.reportValidity();
+        return;
+      }
+      exportQuotationAsPDF();
+    });
+  }
   if (exportSongsPdfBtn) exportSongsPdfBtn.addEventListener('click', exportSongListAsPDF);
   if (exportSongsPdfTopBtn) exportSongsPdfTopBtn.addEventListener('click', exportSongListAsPDF);
-  if (exportImgBtn) exportImgBtn.addEventListener('click', exportQuotationAsImage);
+  if (exportImgBtn) {
+    exportImgBtn.addEventListener('click', () => {
+      if (!isQuotationUnlocked) {
+        showSiteToast('Unlock Quotation First', 'Complete your contact & event details and click "Submit & Unlock My Official Quotation" to save your PNG quote.');
+        form.reportValidity();
+        return;
+      }
+      exportQuotationAsImage();
+    });
+  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1557,12 +1602,32 @@ function initBookingForm() {
       return;
     }
 
+    if (submitBtn) submitBtn.disabled = true;
+    if (spinner) spinner.style.display = 'inline-block';
+    if (btnText) btnText.textContent = 'Unlocking Official Quotation & Calculating Route...';
+
+    // Ensure venue distance & fuel are geocoded if user typed an address without clicking Locate
+    const v1InputVal = document.getElementById('event-venue')?.value.trim() || '';
+    const v2InputVal = document.getElementById('event-venue-2')?.value.trim() || '';
+    const settingValNow = document.getElementById('venue-setting')?.value || '';
+    const isDualNow = settingValNow.includes('2 Sets') || settingValNow.includes('+');
+
+    if (v1InputVal && !venueDistanceState.v1) {
+      await locateOnGoogleMap(1);
+    }
+    if (isDualNow && v2InputVal && !venueDistanceState.v2) {
+      await locateOnGoogleMap(2);
+    }
+
+    // Unlock the quotation on-screen!
+    isQuotationUnlocked = true;
+    renderRequestedSongsTable();
+    await updateDrivingDistanceAndFuel();
     const data = collectFullFormData();
     const summaryText = buildTextSummary(data);
 
-    if (submitBtn) submitBtn.disabled = true;
-    if (spinner) spinner.style.display = 'inline-block';
-    if (btnText) btnText.textContent = 'Preparing Quotation & Setlist...';
+    // Scroll the newly unlocked quotation card into view so the client sees their exact numbers immediately
+    document.getElementById('deposit-summary-box')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     try {
       await navigator.clipboard.writeText(summaryText);
@@ -1621,12 +1686,12 @@ function initBookingForm() {
 
     if (submitBtn) submitBtn.disabled = false;
     if (spinner) spinner.style.display = 'none';
-    if (btnText) btnText.textContent = 'Submit Quotation & Send Setlist to Harold';
+    if (btnText) btnText.textContent = 'Quotation Unlocked ✓ (Resend / Update Inquiry)';
 
     if (emailError) {
-      showSiteToast('Email not delivered', `${emailError}. Opening Messenger instead - paste the copied setlist and send.`);
+      showSiteToast('Quotation Unlocked On-Screen!', `Your official quotation is now unlocked above. Opening Messenger to send your setlist directly...`);
     } else {
-      showSiteToast('Inquiry Sent to Harold!', 'Email delivered. Opening Messenger so you can also chat directly...');
+      showSiteToast('Official Quotation Unlocked & Emailed!', 'Your itemized quotation is now unlocked above and sent to your email! Opening Messenger...');
     }
     setTimeout(() => window.open(`https://m.me/harold.calotrinidad?text=${encodeURIComponent(summaryText)}`, '_blank', 'noopener'), 900);
   });
