@@ -1118,6 +1118,39 @@
                     <option value="Outside Pampanga">Outside Pampanga (Metro Manila / Clark / Subic / Tagaytay / Bulacan)</option>
                   </select>
                 </div>
+
+                <div class="form-group form-group-full" style="margin-top: 0.25rem;">
+                  <label for="transport-service-mode" class="form-label">Transportation &amp; Car Service Arrangement *</label>
+                  <select id="transport-service-mode" name="transportServiceMode" class="form-select" required>
+                    <option value="self_drive" selected>🚗 Harold Brings Own Car — Compute Round-Trip Fuel from Pampanga Home Base</option>
+                    <option value="pickup_point">🤝 Client Provides Car Service from a Pickup / Meetup Point — Compute Fuel Only to Pickup Point</option>
+                    <option value="full_service">🚐 Client Covers Full Door-to-Door Service (Pickup &amp; Drop-Off at Harold's Home Base) — ₱0 Transport Fee</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- CONDITIONAL PICKUP POINT BLOCK (Shown when "pickup_point" is selected) -->
+              <div class="venue-map-block" id="pickup-point-block" style="display: none; margin-bottom: 1.5rem; border-left-color: #10B981; background: #F4FBF7;">
+                <div class="venue-block-title" style="color: #065F46;">🤝 Designated Pickup &amp; Drop-Off Meetup Point (Fuel Computed Only from Home Base ↔ Pickup Point)</div>
+                <div class="form-grid" style="margin-top: 0.75rem;">
+                  <div class="form-group">
+                    <label for="pickup-point-address" class="form-label">Pickup / Meetup Point Name &amp; Address *</label>
+                    <input type="text" id="pickup-point-address" name="pickupPointAddress" class="form-input" placeholder="e.g. SM City Pampanga / Marquee Mall Angeles / Dau Terminal">
+                  </div>
+                  <div class="form-group">
+                    <label for="pickup-point-map" class="form-label">Pickup Point Google Maps Link</label>
+                    <input type="text" id="pickup-point-map" name="pickupPointMap" class="form-input" placeholder="Paste https://maps.app.goo.gl/... or auto-generated link">
+                  </div>
+                </div>
+                <div class="map-action-bar">
+                  <button type="button" class="btn btn-secondary map-action-btn" id="locate-pickup-map-btn">
+                    🔍 Locate Pickup Point on Google Map
+                  </button>
+                  <a href="https://www.google.com/maps" target="_blank" rel="noopener" class="map-open-external" id="open-pickup-map-link">Open Google Maps ↗</a>
+                </div>
+                <div id="map-preview-pickup-wrap" class="map-preview-wrap" style="display: none;">
+                  <iframe id="map-preview-pickup-iframe" title="Pickup Point Google Maps Preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
               </div>
 
               <div class="venues-dual-container">

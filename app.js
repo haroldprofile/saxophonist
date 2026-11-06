@@ -154,6 +154,7 @@ let requestedSongsState = [
 let venueDistanceState = {
   v1: null, // { lat, lng, label, mapUrl }
   v2: null, // { lat, lng, label, mapUrl }
+  pickup: null, // { lat, lng, label, mapUrl }
   oneWayKm: 0,
   roundTripKm: 0,
   litersNeeded: 0,
@@ -293,6 +294,18 @@ function updateVenueBlocksUI() {
   const venue2Block = document.getElementById('venue-2-block');
   const venue1Heading = document.getElementById('venue-1-heading');
   const venue1Label = document.getElementById('venue-1-label');
+  const transportModeEl = document.getElementById('transport-service-mode');
+  const pickupBlock = document.getElementById('pickup-point-block');
+  const pickupAddrInput = document.getElementById('pickup-point-address');
+
+  if (transportModeEl && pickupBlock) {
+    const isPickup = transportModeEl.value === 'pickup_point';
+    pickupBlock.style.display = isPickup ? 'block' : 'none';
+    if (pickupAddrInput) {
+      pickupAddrInput.required = isPickup;
+    }
+  }
+
   if (!venueSetting) return;
 
   const val = venueSetting.value;
@@ -339,10 +352,17 @@ function calculateLiveQuotation() {
   const pkgSelect = document.getElementById('package-select');
   const venueSetting = document.getElementById('venue-setting');
   const locationArea = document.getElementById('location-area');
+  const transportModeEl = document.getElementById('transport-service-mode');
 
   const pkgVal = pkgSelect?.value || 'Package A';
   const settingVal = venueSetting?.value || 'Church & Reception (2 Sets)';
   const areaVal = locationArea?.value || 'Within Pampanga';
+  const transportMode = transportModeEl?.value || 'self_drive';
+  const transportModeLabel = transportMode === 'full_service'
+    ? 'Client Covers Full Door-to-Door Car Service (₱0 Transport)'
+    : transportMode === 'pickup_point'
+      ? 'Client Car Service from Pickup Point (Fuel Computed Home ↔ Pickup)'
+      : 'Harold Drives Own Car from Home Base';
 
   const songs = getRequestedSongsList();
   const customSongsCount = songs.filter(s => s.isCustom).length;
@@ -363,9 +383,20 @@ function calculateLiveQuotation() {
 
   const hasCalculatedDistance = venueDistanceState.roundTripKm > 0;
   const isOutside = areaVal === 'Outside Pampanga' || isCustomQuote;
-  const transportCost = hasCalculatedDistance
-    ? Math.max(transFee, venueDistanceState.computedTransportFee)
-    : (isOutside ? 0 : transFee);
+  let transportCost = 0;
+
+  if (transportMode === 'full_service') {
+    transportCost = 0;
+  } else if (transportMode === 'pickup_point') {
+    transportCost = hasCalculatedDistance
+      ? Math.max(transFee, venueDistanceState.computedTransportFee)
+      : transFee;
+  } else {
+    transportCost = hasCalculatedDistance
+      ? Math.max(transFee, venueDistanceState.computedTransportFee)
+      : (isOutside ? 0 : transFee);
+  }
+
   const totalAmount = basePrice + transportCost + customSongsFee;
   const depositAmount = Math.round(totalAmount * (depPct / 100));
 
@@ -395,16 +426,20 @@ function calculateLiveQuotation() {
   if (!isQuotationUnlocked) {
     if (eyebrowEl) eyebrowEl.textContent = '🔒 OFFICIAL INSTANT QUOTATION — READY TO UNLOCK';
     if (areaBadgeEl) {
-      areaBadgeEl.textContent = hasCalculatedDistance
-        ? `${venueDistanceState.roundTripKm.toFixed(1)} km Round-Trip`
-        : 'Unlock on Submit';
+      areaBadgeEl.textContent = transportMode === 'full_service'
+        ? 'Client Car Service'
+        : hasCalculatedDistance
+          ? `${venueDistanceState.roundTripKm.toFixed(1)} km Round-Trip`
+          : 'Unlock on Submit';
     }
     if (lockedBannerEl) lockedBannerEl.style.display = 'block';
     if (unlockedLinesEl) unlockedLinesEl.style.display = 'none';
     if (lockedSummaryEl) {
-      const distInfo = hasCalculatedDistance
-        ? ` • <strong>Route Distance:</strong> ${venueDistanceState.oneWayKm.toFixed(1)} km One-Way (${venueDistanceState.roundTripKm.toFixed(1)} km Round-Trip)`
-        : '';
+      const distInfo = transportMode === 'full_service'
+        ? ' • <strong>Transport:</strong> Client Door-to-Door Service (₱0)'
+        : hasCalculatedDistance
+          ? ` • <strong>${transportMode === 'pickup_point' ? 'Pickup Distance' : 'Route Distance'}:</strong> ${venueDistanceState.oneWayKm.toFixed(1)} km One-Way (${venueDistanceState.roundTripKm.toFixed(1)} km Round-Trip)`
+          : '';
       lockedSummaryEl.innerHTML = `
         <div style="margin-bottom: 0.35rem;"><strong>Selected Coverage:</strong> ${pkgLabel} (${areaVal})${distInfo} • <strong>Setlist:</strong> ${songs.length} Song${songs.length === 1 ? '' : 's'}${customSongsCount > 0 ? ` (${customSongsCount} Custom)` : ''}</div>
         <div>Complete your contact &amp; event details above and click <strong>"Submit &amp; Unlock My Official Quotation"</strong> below. Once your inquiry is submitted to Harold, your itemized quotation and PDF/PNG downloads will unlock immediately.</div>
@@ -438,21 +473,29 @@ function calculateLiveQuotation() {
     if (exportImgLabel) exportImgLabel.textContent = 'Save Quote PNG';
 
     if (areaBadgeEl) {
-      areaBadgeEl.textContent = hasCalculatedDistance
-        ? `${venueDistanceState.roundTripKm.toFixed(1)} km Round-Trip`
-        : (isOutside ? 'Custom / Price Varies' : 'Pampanga Rate');
+      areaBadgeEl.textContent = transportMode === 'full_service'
+        ? '₱0 Transport (Client Service)'
+        : hasCalculatedDistance
+          ? `${venueDistanceState.roundTripKm.toFixed(1)} km Round-Trip`
+          : (isOutside ? 'Custom / Price Varies' : 'Pampanga Rate');
     }
     if (areaLabelEl) {
-      areaLabelEl.textContent = hasCalculatedDistance
-        ? `${areaVal} (${venueDistanceState.roundTripKm.toFixed(1)} km RT)`
-        : areaVal;
+      areaLabelEl.textContent = transportMode === 'full_service'
+        ? 'Client Covers Door-to-Door Service'
+        : transportMode === 'pickup_point'
+          ? `Pickup Point (${hasCalculatedDistance ? venueDistanceState.roundTripKm.toFixed(1) + ' km RT' : 'Home ↔ Meetup'})`
+          : hasCalculatedDistance
+            ? `${areaVal} (${venueDistanceState.roundTripKm.toFixed(1)} km RT)`
+            : areaVal;
     }
     if (baseCostEl) baseCostEl.textContent = isCustomQuote ? `₱${basePrice.toLocaleString()} (Starting Base — Varies)` : `₱${basePrice.toLocaleString()}`;
     if (transCostEl) {
-      if (hasCalculatedDistance) {
+      if (transportMode === 'full_service') {
+        transCostEl.textContent = '₱0 (Waived — Client Door-to-Door Service)';
+      } else if (hasCalculatedDistance) {
         transCostEl.textContent = `₱${transportCost.toLocaleString()} (${venueDistanceState.roundTripKm.toFixed(1)} km @ ₱${venueDistanceState.gasPrice}/L)`;
       } else {
-        transCostEl.textContent = isOutside ? 'Locate Venue on Map to Compute' : `₱${transportCost.toLocaleString()}`;
+        transCostEl.textContent = (isOutside && transportMode === 'self_drive') ? 'Locate Venue on Map to Compute' : `₱${transportCost.toLocaleString()}`;
       }
     }
 
@@ -463,12 +506,12 @@ function calculateLiveQuotation() {
     }
 
     if (totalCostEl) {
-      totalCostEl.textContent = (isOutside && !hasCalculatedDistance)
+      totalCostEl.textContent = (isOutside && !hasCalculatedDistance && transportMode === 'self_drive')
         ? `₱${totalAmount.toLocaleString()}+ (Price Varies by Location/Setup)`
         : `₱${totalAmount.toLocaleString()}`;
     }
     if (depositCostEl) {
-      depositCostEl.textContent = (isOutside && !hasCalculatedDistance)
+      depositCostEl.textContent = (isOutside && !hasCalculatedDistance && transportMode === 'self_drive')
         ? `₱${depositAmount.toLocaleString()}+ (${depPct}% of Final Agreed Quote)`
         : `₱${depositAmount.toLocaleString()} (${depPct}% Downpayment)`;
     }
@@ -482,6 +525,8 @@ function calculateLiveQuotation() {
     pkgLabel,
     settingVal,
     areaVal,
+    transportMode,
+    transportModeLabel,
     isOutside,
     isCustomQuote,
     hasCalculatedDistance,
@@ -531,6 +576,7 @@ function initDepositCalculator() {
   const pkgSelect = document.getElementById('package-select');
   const venueSetting = document.getElementById('venue-setting');
   const locationArea = document.getElementById('location-area');
+  const transportModeEl = document.getElementById('transport-service-mode');
 
   if (pkgSelect && venueSetting) {
     pkgSelect.addEventListener('change', () => {
@@ -540,11 +586,7 @@ function initDepositCalculator() {
         venueSetting.value = 'Church Ceremony Only (1 Set)';
       }
       updateVenueBlocksUI();
-      if (venueDistanceState.v1 || venueDistanceState.v2) {
-        updateDrivingDistanceAndFuel();
-      } else {
-        calculateLiveQuotation();
-      }
+      updateDrivingDistanceAndFuel();
     });
   }
 
@@ -556,16 +598,19 @@ function initDepositCalculator() {
         pkgSelect.value = 'Package B';
       }
       updateVenueBlocksUI();
-      if (venueDistanceState.v1 || venueDistanceState.v2) {
-        updateDrivingDistanceAndFuel();
-      } else {
-        calculateLiveQuotation();
-      }
+      updateDrivingDistanceAndFuel();
     });
   }
 
   if (locationArea) {
     locationArea.addEventListener('change', calculateLiveQuotation);
+  }
+
+  if (transportModeEl) {
+    transportModeEl.addEventListener('change', () => {
+      updateVenueBlocksUI();
+      updateDrivingDistanceAndFuel();
+    });
   }
 
   updateVenueBlocksUI();
@@ -771,6 +816,8 @@ function collectFullFormData() {
   const venue1Map = document.getElementById('venue-1-map')?.value.trim() || '';
   const eventVenue2 = document.getElementById('event-venue-2')?.value.trim() || '';
   const venue2Map = document.getElementById('venue-2-map')?.value.trim() || '';
+  const pickupPointAddress = document.getElementById('pickup-point-address')?.value.trim() || '';
+  const pickupPointMap = document.getElementById('pickup-point-map')?.value.trim() || '';
   const eventNotes = document.getElementById('event-notes')?.value.trim() || 'Standard performance setup.';
 
   const isDualVenue = quote.settingVal.includes('2 Sets') || quote.settingVal.includes('+');
@@ -791,6 +838,8 @@ function collectFullFormData() {
     venue1Map,
     eventVenue2: isDualVenue ? eventVenue2 : '',
     venue2Map: isDualVenue ? venue2Map : '',
+    pickupPointAddress: quote.transportMode === 'pickup_point' ? pickupPointAddress : '',
+    pickupPointMap: quote.transportMode === 'pickup_point' ? pickupPointMap : '',
     eventNotes,
     generatedAt: new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
   };
@@ -809,6 +858,8 @@ function buildTextSummary(data) {
     `🎉 Event Type: ${data.eventType}`,
     `📅 Event Date & Time: ${data.eventDate} (${data.eventTime})`,
     `📍 Set Coverage: ${data.settingVal} (${data.pkgVal || 'Package A'})`,
+    `🚐 Transport Service Option: ${data.transportModeLabel}`,
+    data.pickupPointAddress ? `🤝 Designated Pickup Point: ${data.pickupPointAddress}${data.pickupPointMap ? ' | Map: ' + data.pickupPointMap : ''}` : null,
     `🏛️ Venue 1: ${data.eventVenue1}${data.venue1Map ? ' | Google Map: ' + data.venue1Map : ''}`,
     data.eventVenue2 ? `🥂 Venue 2 (Reception): ${data.eventVenue2}${data.venue2Map ? ' | Google Map: ' + data.venue2Map : ''}` : null,
     data.hasCalculatedDistance ? `🚗 Distance from Home Base: ${data.oneWayKm.toFixed(1)} km one-way (${data.roundTripKm.toFixed(1)} km round-trip | ~${data.litersNeeded.toFixed(1)}L @ ₱${data.gasPrice}/L, ${data.fuelEff} km/L)` : null,
@@ -823,9 +874,9 @@ function buildTextSummary(data) {
     ``,
     `💰 QUOTATION SUMMARY:`,
     `  • Base Package: ₱${data.basePrice.toLocaleString()}`,
-    `  • Transport (${data.hasCalculatedDistance ? data.roundTripKm.toFixed(1) + ' km Round-Trip' : data.areaVal}): ${(data.isOutside && !data.hasCalculatedDistance) ? 'Varies by venue distance' : '₱' + data.transportCost.toLocaleString()}`,
+    `  • Transport (${data.transportMode === 'full_service' ? 'Client Door-to-Door Service' : data.hasCalculatedDistance ? data.roundTripKm.toFixed(1) + ' km Round-Trip' : data.areaVal}): ${data.transportMode === 'full_service' ? '₱0 (Waived)' : (data.isOutside && !data.hasCalculatedDistance && data.transportMode === 'self_drive') ? 'Varies by venue distance' : '₱' + data.transportCost.toLocaleString()}`,
     data.customSongsCount > 0 ? `  • Custom Song Arrangements (${data.customSongsCount}x): ₱${data.customSongsFee.toLocaleString()}` : null,
-    `  • ESTIMATED TOTAL: ₱${data.totalAmount.toLocaleString()}${data.isOutside ? '+ (Final price varies by location/setup)' : ''}`,
+    `  • ESTIMATED TOTAL: ₱${data.totalAmount.toLocaleString()}${(data.isOutside && !data.hasCalculatedDistance && data.transportMode === 'self_drive') ? '+ (Final price varies by location/setup)' : ''}`,
     `  • 30% RESERVATION DEPOSIT: ₱${data.depositAmount.toLocaleString()}`,
     `  * Note: Custom quotations and events outside Pampanga may vary in price depending on travel distance, venue logistics, and total sets.*`
   ].filter(Boolean).join('\n');
@@ -1269,15 +1320,105 @@ async function updateDrivingDistanceAndFuel() {
 
   const venueSetting = document.getElementById('venue-setting')?.value || '';
   const isDualVenue = venueSetting.includes('2 Sets') || venueSetting.includes('+');
+  const transportMode = document.getElementById('transport-service-mode')?.value || 'self_drive';
 
   const v1 = venueDistanceState.v1;
   const v2 = isDualVenue ? venueDistanceState.v2 : null;
+  const pickup = transportMode === 'pickup_point' ? venueDistanceState.pickup : null;
 
   const summaryCard = document.getElementById('venue-distance-summary');
   const kmBadge = document.getElementById('distance-km-badge');
   const formulaEl = document.getElementById('distance-formula-text');
   const linksEl = document.getElementById('generated-map-links');
 
+  // Case 1: Full Door-to-Door Car Service Provided by Client -> ₱0 Transport Fee
+  if (transportMode === 'full_service') {
+    venueDistanceState.oneWayKm = 0;
+    venueDistanceState.roundTripKm = 0;
+    venueDistanceState.litersNeeded = 0;
+    venueDistanceState.rawFuelCost = 0;
+    venueDistanceState.computedTransportFee = 0;
+    venueDistanceState.directionsUrl = v1
+      ? `https://www.google.com/maps/dir/?api=1&origin=${homeLat},${homeLng}&destination=${homeLat},${homeLng}&waypoints=${encodeURIComponent(v2 ? `${v1.lat},${v1.lng}|${v2.lat},${v2.lng}` : `${v1.lat},${v1.lng}`)}&travelmode=driving`
+      : '';
+
+    if (summaryCard && kmBadge && formulaEl && linksEl) {
+      summaryCard.style.display = 'block';
+      kmBadge.textContent = '🚐 Client Door-to-Door Service • ₱0 Transport Fee';
+      formulaEl.innerHTML = `
+        <div><strong>Service Arrangement:</strong> Client provides round-trip pickup &amp; drop-off directly from Harold's Pampanga Home Base (Point A).</div>
+        <div style="color: #6EE7B7; font-weight: 600;">✓ Transport &amp; Fuel Fee is <strong>₱0 (Waived)</strong>.</div>
+      `;
+      const linkChips = [`<a href="${homeMapUrl}" target="_blank" rel="noopener" style="color:var(--accent-gold); text-decoration:underline; font-weight:600;">🏠 Point A: Harold's Home Pickup Map</a>`];
+      if (v1) linkChips.push(`<a href="${v1.mapUrl}" target="_blank" rel="noopener" style="color:#FFF8DC; text-decoration:underline; font-weight:600;">📍 Venue 1 Google Map Link</a>`);
+      if (v2) linkChips.push(`<a href="${v2.mapUrl}" target="_blank" rel="noopener" style="color:#FFF8DC; text-decoration:underline; font-weight:600;">🥂 Venue 2 Google Map Link</a>`);
+      if (venueDistanceState.directionsUrl) linkChips.push(`<a href="${venueDistanceState.directionsUrl}" target="_blank" rel="noopener" style="color:#6EE7B7; text-decoration:underline; font-weight:700;">🧭 View Pickup-to-Venue Route ↗</a>`);
+      linksEl.innerHTML = linkChips.join(' <span style="color:#57534E;">|</span> ');
+    }
+    calculateLiveQuotation();
+    return;
+  }
+
+  // Case 2: Pickup Point Service Mode -> Compute fuel strictly between Home Base <-> Pickup Point
+  if (transportMode === 'pickup_point') {
+    if (!pickup) {
+      venueDistanceState.oneWayKm = 0;
+      venueDistanceState.roundTripKm = 0;
+      venueDistanceState.computedTransportFee = 0;
+      if (summaryCard && kmBadge && formulaEl && linksEl) {
+        summaryCard.style.display = 'block';
+        kmBadge.textContent = '🤝 Locate Pickup Point Above';
+        formulaEl.innerHTML = `<div><strong>Pickup Point Service Selected:</strong> Enter your designated meetup/pickup location above and click <strong>"Locate Pickup Point on Google Map"</strong> so we only compute fuel between Harold's Home Base ↔ Pickup Point.</div>`;
+        linksEl.innerHTML = `<a href="${homeMapUrl}" target="_blank" rel="noopener" style="color:var(--accent-gold); text-decoration:underline; font-weight:600;">🏠 Point A: Harold's Home Map</a>`;
+      }
+      calculateLiveQuotation();
+      return;
+    }
+
+    const oneWayKm = await computeDrivingLegKm(homeLat, homeLng, pickup.lat, pickup.lng);
+    const roundTripKm = oneWayKm * 2;
+    const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${homeLat},${homeLng}&destination=${homeLat},${homeLng}&waypoints=${pickup.lat},${pickup.lng}&travelmode=driving`;
+    const litersNeeded = roundTripKm / fuelEff;
+    const rawFuelCost = Math.ceil(litersNeeded * gasPrice);
+    const computedTransportFee = Math.max(minTransFee, rawFuelCost);
+
+    venueDistanceState.oneWayKm = oneWayKm;
+    venueDistanceState.roundTripKm = roundTripKm;
+    venueDistanceState.litersNeeded = litersNeeded;
+    venueDistanceState.rawFuelCost = rawFuelCost;
+    venueDistanceState.computedTransportFee = computedTransportFee;
+    venueDistanceState.gasPrice = gasPrice;
+    venueDistanceState.fuelEff = fuelEff;
+    venueDistanceState.directionsUrl = directionsUrl;
+
+    if (summaryCard && kmBadge && formulaEl && linksEl) {
+      summaryCard.style.display = 'block';
+      kmBadge.textContent = `Pickup Point: ${oneWayKm.toFixed(1)} km One-Way • ${roundTripKm.toFixed(1)} km RT`;
+      if (isQuotationUnlocked) {
+        formulaEl.innerHTML = `
+          <div><strong>Pickup Route (Home ↔ Meetup Point):</strong> ${oneWayKm.toFixed(1)} km one-way (${roundTripKm.toFixed(1)} km round-trip to <strong>${pickup.label}</strong>)</div>
+          <div><strong>Fuel Computation (To Pickup Point Only):</strong> ${roundTripKm.toFixed(1)} km ÷ ${fuelEff} km/L = <strong>${litersNeeded.toFixed(2)} L</strong> × ₱${gasPrice}/L = <strong>₱${rawFuelCost.toLocaleString()}</strong> ${rawFuelCost < minTransFee ? `(Minimum Transport Floor Applied: <strong style="color:var(--accent-gold);">₱${minTransFee.toLocaleString()}</strong>)` : `→ Transport Fee: <strong style="color:var(--accent-gold);">₱${computedTransportFee.toLocaleString()}</strong>`}</div>
+        `;
+      } else {
+        formulaEl.innerHTML = `
+          <div><strong>Pickup Route (Home ↔ Meetup Point):</strong> ${oneWayKm.toFixed(1)} km one-way (<strong>${roundTripKm.toFixed(1)} km round-trip</strong> to ${pickup.label})</div>
+          <div style="color: var(--accent-gold); font-size: 0.82rem; margin-top: 0.2rem;">🔒 Fuel is computed strictly for Home ↔ Pickup Point (${litersNeeded.toFixed(1)} L RT) and will unlock upon submitting your quotation below.</div>
+        `;
+      }
+      const linkChips = [
+        `<a href="${homeMapUrl}" target="_blank" rel="noopener" style="color:var(--accent-gold); text-decoration:underline; font-weight:600;">🏠 Point A: Harold's Home Map</a>`,
+        `<a href="${pickup.mapUrl}" target="_blank" rel="noopener" style="color:#6EE7B7; text-decoration:underline; font-weight:600;">🤝 Pickup Point Map Link</a>`,
+        `<a href="${directionsUrl}" target="_blank" rel="noopener" style="color:#6EE7B7; text-decoration:underline; font-weight:700;">🧭 View Home ↔ Pickup Route (${roundTripKm.toFixed(1)} km RT) ↗</a>`
+      ];
+      if (v1) linkChips.push(`<a href="${v1.mapUrl}" target="_blank" rel="noopener" style="color:#FFF8DC; text-decoration:underline; font-weight:600;">📍 Venue 1 Map</a>`);
+      if (v2) linkChips.push(`<a href="${v2.mapUrl}" target="_blank" rel="noopener" style="color:#FFF8DC; text-decoration:underline; font-weight:600;">🥂 Venue 2 Map</a>`);
+      linksEl.innerHTML = linkChips.join(' <span style="color:#57534E;">|</span> ');
+    }
+    calculateLiveQuotation();
+    return;
+  }
+
+  // Case 3: Self-Drive Mode (Default) -> Compute Home -> Venue 1 (-> Venue 2) -> Home
   if (!v1 && !v2) {
     venueDistanceState.oneWayKm = 0;
     venueDistanceState.roundTripKm = 0;
@@ -1363,16 +1504,17 @@ async function updateDrivingDistanceAndFuel() {
 }
 
 async function locateOnGoogleMap(venueNum) {
-  const addrInput = document.getElementById(venueNum === 1 ? 'event-venue' : 'event-venue-2');
-  const mapInput = document.getElementById(venueNum === 1 ? 'venue-1-map' : 'venue-2-map');
-  const wrap = document.getElementById(venueNum === 1 ? 'map-preview-1-wrap' : 'map-preview-2-wrap');
-  const iframe = document.getElementById(venueNum === 1 ? 'map-preview-1-iframe' : 'map-preview-2-iframe');
-  const extLink = document.getElementById(venueNum === 1 ? 'open-map-1-link' : 'open-map-2-link');
+  const isPickup = venueNum === 'pickup';
+  const addrInput = document.getElementById(isPickup ? 'pickup-point-address' : (venueNum === 1 ? 'event-venue' : 'event-venue-2'));
+  const mapInput = document.getElementById(isPickup ? 'pickup-point-map' : (venueNum === 1 ? 'venue-1-map' : 'venue-2-map'));
+  const wrap = document.getElementById(isPickup ? 'map-preview-pickup-wrap' : (venueNum === 1 ? 'map-preview-1-wrap' : 'map-preview-2-wrap'));
+  const iframe = document.getElementById(isPickup ? 'map-preview-pickup-iframe' : (venueNum === 1 ? 'map-preview-1-iframe' : 'map-preview-2-iframe'));
+  const extLink = document.getElementById(isPickup ? 'open-pickup-map-link' : (venueNum === 1 ? 'open-map-1-link' : 'open-map-2-link'));
 
   const addrVal = addrInput?.value.trim() || '';
   const mapVal = mapInput?.value.trim() || '';
   if (!addrVal && !mapVal) {
-    showSiteToast('Enter Venue or Map Link', 'Please type the venue name/address or paste a Google Maps link first.');
+    showSiteToast('Enter Location or Map Link', 'Please type the location name/address or paste a Google Maps link first.');
     return;
   }
 
@@ -1399,14 +1541,15 @@ async function locateOnGoogleMap(venueNum) {
     }
     if (extLink) extLink.href = exactMapUrl;
 
-    venueDistanceState[venueNum === 1 ? 'v1' : 'v2'] = {
+    const stateKey = isPickup ? 'pickup' : (venueNum === 1 ? 'v1' : 'v2');
+    venueDistanceState[stateKey] = {
       lat: resolvedCoords.lat,
       lng: resolvedCoords.lng,
       label: addrVal || query,
       mapUrl: exactMapUrl
     };
     await updateDrivingDistanceAndFuel();
-    showSiteToast('Distance & Fuel Calculated!', `Located "${addrVal || query}" (${venueDistanceState.oneWayKm.toFixed(1)} km from Home Base).`);
+    showSiteToast('Distance & Fuel Calculated!', `Located "${addrVal || query}".`);
   } else {
     if (extLink) extLink.href = mapVal.startsWith('http') ? mapVal : generatedSearchUrl;
     showSiteToast('Map Preview Loaded', `Showing Google Map link for "${query}". Tip: Add city/province (e.g., Pampanga) for exact km calculation.`);
@@ -1583,18 +1726,24 @@ function initBookingForm() {
   });
 
   // Google Maps Handlers
+  const locatePickupBtn = document.getElementById('locate-pickup-map-btn');
   if (locateMap1Btn) locateMap1Btn.addEventListener('click', () => locateOnGoogleMap(1));
   if (locateMap2Btn) locateMap2Btn.addEventListener('click', () => locateOnGoogleMap(2));
+  if (locatePickupBtn) locatePickupBtn.addEventListener('click', () => locateOnGoogleMap('pickup'));
 
   const venue1AddrEl = document.getElementById('event-venue');
   const venue1MapEl = document.getElementById('venue-1-map');
   const venue2AddrEl = document.getElementById('event-venue-2');
   const venue2MapEl = document.getElementById('venue-2-map');
+  const pickupAddrEl = document.getElementById('pickup-point-address');
+  const pickupMapEl = document.getElementById('pickup-point-map');
 
   if (venue1AddrEl) venue1AddrEl.addEventListener('change', () => { if (venue1AddrEl.value.trim()) locateOnGoogleMap(1); });
   if (venue1MapEl) venue1MapEl.addEventListener('change', () => { if (venue1MapEl.value.trim()) locateOnGoogleMap(1); });
   if (venue2AddrEl) venue2AddrEl.addEventListener('change', () => { if (venue2AddrEl.value.trim()) locateOnGoogleMap(2); });
   if (venue2MapEl) venue2MapEl.addEventListener('change', () => { if (venue2MapEl.value.trim()) locateOnGoogleMap(2); });
+  if (pickupAddrEl) pickupAddrEl.addEventListener('change', () => { if (pickupAddrEl.value.trim()) locateOnGoogleMap('pickup'); });
+  if (pickupMapEl) pickupMapEl.addEventListener('change', () => { if (pickupMapEl.value.trim()) locateOnGoogleMap('pickup'); });
 
   if (gpsMap1Btn) {
     gpsMap1Btn.addEventListener('click', () => {
@@ -1707,6 +1856,8 @@ function initBookingForm() {
     // Ensure venue distance & fuel are geocoded if user typed an address without clicking Locate
     const v1InputVal = rawVenue;
     const v2InputVal = document.getElementById('event-venue-2')?.value.trim() || '';
+    const pickupInputVal = document.getElementById('pickup-point-address')?.value.trim() || '';
+    const transportModeNow = document.getElementById('transport-service-mode')?.value || 'self_drive';
     const settingValNow = document.getElementById('venue-setting')?.value || '';
     const isDualNow = settingValNow.includes('2 Sets') || settingValNow.includes('+');
 
@@ -1715,6 +1866,9 @@ function initBookingForm() {
     }
     if (isDualNow && v2InputVal && !venueDistanceState.v2) {
       await locateOnGoogleMap(2);
+    }
+    if (transportModeNow === 'pickup_point' && pickupInputVal && !venueDistanceState.pickup) {
+      await locateOnGoogleMap('pickup');
     }
 
     // Collect full data while UI is still locked so we can transmit to Harold FIRST
@@ -1746,9 +1900,9 @@ function initBookingForm() {
         event_date: data.eventDate,
         event_time: data.eventTime,
         set_coverage: `${data.settingVal} (${data.pkgVal || 'Package A'})`,
-        event_venue: `${data.eventVenue}${data.venue1Map ? ' | Map: ' + data.venue1Map : ''}${data.hasCalculatedDistance ? ' (' + data.roundTripKm.toFixed(1) + ' km RT, ₱' + data.transportCost.toLocaleString() + ' Fuel/Transport)' : ''}`,
-        coverage_area: data.areaVal,
-        total_quotation: `₱${data.totalAmount.toLocaleString()}${(data.isOutside && !data.hasCalculatedDistance) ? ' + Travel' : ''}`,
+        event_venue: `${data.eventVenue}${data.venue1Map ? ' | Map: ' + data.venue1Map : ''}${data.pickupPointAddress ? ' | Pickup Point: ' + data.pickupPointAddress + (data.pickupPointMap ? ' (' + data.pickupPointMap + ')' : '') : ''}${data.hasCalculatedDistance ? ' (' + data.roundTripKm.toFixed(1) + ' km RT, ₱' + data.transportCost.toLocaleString() + ' Fuel/Transport)' : ''}`,
+        coverage_area: `${data.areaVal} • ${data.transportModeLabel}`,
+        total_quotation: `₱${data.totalAmount.toLocaleString()}${(data.isOutside && !data.hasCalculatedDistance && data.transportMode === 'self_drive') ? ' + Travel' : ''}`,
         deposit_amount: `₱${data.depositAmount.toLocaleString()}`,
         song_list: songLines,
         special_notes: data.eventNotes,
